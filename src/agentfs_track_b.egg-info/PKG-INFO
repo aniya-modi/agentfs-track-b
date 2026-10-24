@@ -1,0 +1,15 @@
+Metadata-Version: 2.4
+Name: agentfs-track-b
+Version: 0.1.0
+Summary: Metadata profiling and Bio-RAG context for pathway-informed feature selection
+Requires-Python: >=3.11
+Requires-Dist: biopython
+Requires-Dist: pydantic>=2
+Requires-Dist: requests
+Requires-Dist: numpy
+Requires-Dist: pandas
+Provides-Extra: agents
+Requires-Dist: langgraph; extra == "agents"
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: ruff; extra == "dev"

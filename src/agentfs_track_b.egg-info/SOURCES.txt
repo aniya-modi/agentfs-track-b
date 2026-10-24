@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+src/agentfs/__init__.py
+src/agentfs/agent_state.py
+src/agentfs/bio_rag.py
+src/agentfs/metadata_profiler.py
+src/agentfs/schemas.py
+src/agentfs_track_b.egg-info/PKG-INFO
+src/agentfs_track_b.egg-info/SOURCES.txt
+src/agentfs_track_b.egg-info/dependency_links.txt
+src/agentfs_track_b.egg-info/requires.txt
+src/agentfs_track_b.egg-info/top_level.txt
