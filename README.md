@@ -1,36 +1,89 @@
 # AgentFS Track B
 
-Track B implements dataset metadata profiling, biological context retrieval, and
-validated configuration for the pathway-informed feature-selection project.
+Track B provides the metadata and biological context layer for the
+pathway-informed feature-selection project. Month 1 delivers a local metadata
+profiler, a platform-annotation-based NCBI/KEGG client, and validated contracts
+for the later agent workflow.
 
-## Setup
+## Environment setup
+
+Use Python 3.11 or newer:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e ".[agents,dev]"
+python -m pip install --upgrade pip
+python -m pip install -e ".[agents]"
 ```
 
-Run the synthetic profiler example:
+The project uses Pydantic v2, Biopython, Requests, pandas, and NumPy. The
+`agents` extra installs LangGraph for the later orchestration phase. Keep API
+credentials in environment variables; never commit tokens or `.env` files.
 
-```bash
-python examples/profile_example.py
-```
-
-For NCBI Entrez lookups, set an email address and optionally an API key:
+NCBI E-utilities requires an email address. An API key is optional:
 
 ```bash
 export NCBI_EMAIL="your-email@example.com"
 export NCBI_API_KEY="your-ncbi-api-key"  # optional
 ```
 
-Do not commit API keys, patient-level data, or raw datasets. Bio-RAG currently
-accepts gene symbols; probe-ID mapping depends on the final dataset platform and
-annotation source, which should be agreed with the project team.
+KEGG REST access does not use an API key in this client. Its request rate is
+throttled, and transient server/network errors are retried.
 
-## Modules
+## Metadata profiler
 
-- `metadata_profiler.py`: aggregate dimensions, missingness, variance, and class balance.
-- `bio_rag.py`: retrieve NCBI Gene summaries for gene symbols.
-- `schemas.py`: validate selection settings and final agent decisions.
-- `agent_state.py`: initial shared state shape for later orchestration.
+Rows are samples; columns are numeric features. The result is aggregate-only
+JSON metadata and does not contain expression values or sample identifiers:
+
+```python
+import pandas as pd
+
+from agentfs.metadata_profiler import profile_dataset, profile_to_json
+
+expression = pd.DataFrame({"probe_a": [1.0, 2.0, 3.0], "probe_b": [5.0, 5.0, 5.0]})
+labels = pd.Series(["ALL", "ALL", "AML"])
+profile = profile_dataset(expression, labels, dataset_id="example")
+print(profile_to_json(profile))
+```
+
+`examples/profile_example.py` provides a small runnable example. The profile
+includes sample and feature counts, p/n ratio, missing and non-finite counts,
+near-zero-variance count, zero-value fraction, target class counts, imbalance
+ratio, and a bounded correlation summary. If profile statistics will influence
+cross-validation settings, calculate them on the current training fold.
+
+## Bio-RAG probe resolution
+
+Opaque probe IDs require the correct platform annotation file. This client does
+not guess gene symbols from probe IDs. Supply a platform-specific CSV or TSV with
+probe and gene-symbol columns:
+
+```python
+from agentfs.bio_rag import BioRAGClient, load_probe_annotation
+
+annotation = load_probe_annotation(
+    "data/annotation/platform_annotation.tsv",
+    probe_column="Probe Set ID",
+    gene_symbol_column="Gene Symbol",
+)
+client = BioRAGClient(annotation, organism="Homo sapiens", kegg_organism="hsa")
+context = client.resolve_probe("202421_at", platform="GPL96")
+print(context.model_dump_json(indent=2))
+```
+
+The annotation file and column labels depend on the selected dataset/platform.
+The lookup returns explicit unmapped/ambiguous statuses, NCBI Gene summary and
+identifier where resolved, KEGG pathway records when available, source names,
+and retrieval time. Only probe/gene identifiers are sent to NCBI and KEGG; the
+expression matrix and sample labels remain local.
+
+## Track handoff contracts
+
+- Track A receives `metadata_profiler.profile_dataset(...)` output and a list of
+  `ProbeGeneContext` records containing gene and pathway identifiers.
+- Track C receives `FeatureSelectionConfig` and `AgentDebateDecision` schemas.
+- `AgentState` carries metadata, identifiers, validated proposals, and errors;
+  it does not include expression values.
+
+See [`docs/track_b_month1.md`](docs/track_b_month1.md) for the Month 1 contract
+and completion checklist.

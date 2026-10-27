@@ -1,13 +1,23 @@
-"""Shared state shape for future LangGraph orchestration."""
+"""Typed shared state contract for the future LangGraph workflow."""
 
-from typing import Any, TypedDict
+from __future__ import annotations
 
-from .schemas import AgentDebateDecision
+from typing import Any, NotRequired, TypedDict
+
+from .schemas import AgentDebateDecision, FeatureSelectionConfig, ProbeGeneContext
 
 
-class AgentState(TypedDict, total=False):
+class AgentState(TypedDict):
+    """State passed between planner, refiner, challenger, and judge nodes.
+
+    Values are metadata and biological identifiers/context only. The expression
+    matrix remains in the local analysis pipeline and is not part of agent state.
+    """
+
+    dataset_id: str
     metadata_profile: dict[str, Any]
-    gene_mappings: list[dict[str, Any]]
-    proposed_configs: list[dict[str, Any]]
-    final_decision: AgentDebateDecision
-    errors: list[str]
+    probe_ids: list[str]
+    gene_contexts: list[ProbeGeneContext]
+    proposed_configs: list[FeatureSelectionConfig]
+    final_decision: NotRequired[AgentDebateDecision]
+    errors: NotRequired[list[str]]

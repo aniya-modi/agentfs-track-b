@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 .env
+*.egg-info/
+.ipynb_checkpoints/
 data/*
 !data/.gitkeep
 .pytest_cache/

@@ -1,10 +1,8 @@
 """Run the metadata profiler on a tiny synthetic matrix."""
 
-import json
-
 import pandas as pd
 
-from agentfs.metadata_profiler import profile_dataset
+from agentfs.metadata_profiler import profile_dataset, profile_to_json
 
 expression = pd.DataFrame(
     {
@@ -14,4 +12,4 @@ expression = pd.DataFrame(
     }
 )
 labels = pd.Series(["ALL", "ALL", "AML", "AML"], name="class")
-print(json.dumps(profile_dataset(expression, labels), indent=2))
+print(profile_to_json(profile_dataset(expression, labels, dataset_id="synthetic-example")))
