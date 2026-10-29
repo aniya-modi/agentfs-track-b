@@ -20,6 +20,19 @@ The project uses Pydantic v2, Biopython, Requests, pandas, and NumPy. The
 `agents` extra installs LangGraph for the later orchestration phase. Keep API
 credentials in environment variables; never commit tokens or `.env` files.
 
+## Dataset feature identifiers
+
+The data-loading notebook reads Golub leukemia from the checked-in
+`data/reference/golub_hu6800.csv.gz` export. Its feature headers are the
+original Hu6800 probe set IDs and remain attached during variance filtering.
+The scikit-feature Golub `.mat` file contains no feature names, so it is not
+used for this dataset. See `data/reference/README.md` for provenance.
+
+The Colon `.mat` file also contains no feature names. Its columns receive
+stable `att_1` through `att_2000` source-position labels. These are not gene or
+probe IDs and must not be sent to Bio-RAG unless a verified annotation maps
+them to a biological identifier.
+
 NCBI E-utilities requires an email address. An API key is optional:
 
 ```bash
