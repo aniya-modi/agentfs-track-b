@@ -4,9 +4,11 @@ Part of the hyperfs pipeline.
 """
 
 import os
+import re
+from typing import Dict, Optional, Sequence, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Tuple, Optional, Dict
 
 
 class MicroarrayDataLoader:
@@ -20,8 +22,17 @@ class MicroarrayDataLoader:
         self.X: Optional[pd.DataFrame] = None
         self.y: Optional[np.ndarray] = None
 
-    def load_raw_data(self) -> Tuple[pd.DataFrame, np.ndarray]:
-        """Loads CSV data and separates gene features (X) from class target (y)."""
+    def load_raw_data(
+        self,
+        *,
+        feature_ids: Optional[Sequence[str]] = None,
+    ) -> Tuple[pd.DataFrame, np.ndarray]:
+        """Load features and labels, optionally restoring IDs from a verified source.
+
+        ``feature_ids`` must be in the same order as the feature columns in the
+        input CSV. Generic ``GENE_1``-style placeholders are rejected unless
+        verified identifiers are supplied explicitly.
+        """
         if not os.path.exists(self.file_path):
             raise FileNotFoundError(f"Dataset file not found at: {self.file_path}")
 
@@ -33,7 +44,24 @@ class MicroarrayDataLoader:
         else:
             raise KeyError(f"Label column '{self.label_column}' not found in dataset.")
 
-        print(f"Loaded Raw Dataset: {self.X.shape[0]} samples × {self.X.shape[1]} gene probes.")
+        if feature_ids is not None:
+            ids = [str(feature_id).strip() for feature_id in feature_ids]
+            if len(ids) != self.X.shape[1]:
+                raise ValueError(
+                    f"Expected {self.X.shape[1]} feature IDs, received {len(ids)}."
+                )
+            if any(not feature_id for feature_id in ids):
+                raise ValueError("Feature IDs must not be empty.")
+            if len(set(ids)) != len(ids):
+                raise ValueError("Feature IDs must be unique.")
+            self.X.columns = ids
+        elif any(re.fullmatch(r"GENE_\d+", str(column)) for column in self.X.columns):
+            raise ValueError(
+                "Generic GENE_n feature labels are not identifiers. Pass the verified "
+                "feature_ids in source-column order or use a source file with real IDs."
+            )
+
+        print(f"Loaded raw dataset: {self.X.shape[0]} samples × {self.X.shape[1]} features.")
         return self.X, self.y
 
     def apply_log2_transform(self, offset: float = 1.0) -> pd.DataFrame:
