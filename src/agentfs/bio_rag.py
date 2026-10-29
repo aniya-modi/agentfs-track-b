@@ -79,6 +79,7 @@ class BioRAGClient:
             annotation file with :func:`load_probe_annotation`.
         organism: NCBI organism name.
         kegg_organism: KEGG organism code (``hsa`` for human).
+        annotation_source: Human-readable source for the probe annotation mapping.
         email: NCBI contact email. Defaults to ``NCBI_EMAIL``.
         api_key: Optional NCBI API key. Defaults to ``NCBI_API_KEY``.
     """
@@ -89,6 +90,7 @@ class BioRAGClient:
         *,
         organism: str = "Homo sapiens",
         kegg_organism: str = "hsa",
+        annotation_source: str = "platform annotation",
         email: str | None = None,
         api_key: str | None = None,
         timeout_seconds: float = 20.0,
@@ -107,9 +109,12 @@ class BioRAGClient:
             raise ValueError("Retry and request-interval values cannot be negative.")
         if not re.fullmatch(r"[A-Za-z0-9_]+", kegg_organism):
             raise ValueError("kegg_organism must be a KEGG organism code, such as 'hsa'.")
+        if not annotation_source.strip():
+            raise ValueError("annotation_source must not be empty.")
 
         self.organism = organism
         self.kegg_organism = kegg_organism
+        self.annotation_source = annotation_source.strip()
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
         self.retry_backoff_seconds = retry_backoff_seconds
@@ -312,10 +317,10 @@ class BioRAGClient:
                 organism=self.organism,
                 status="unmapped_probe",
                 retrieved_at=retrieved_at,
-                sources=["platform annotation required"],
+                sources=[self.annotation_source],
                 detail=(
-                    "No platform annotation mapping was supplied for this probe; "
-                    "the identifier was not guessed or sent as a gene symbol."
+                    "The supplied platform annotation has no gene symbol for this probe; "
+                    "the probe ID was not guessed or sent as a gene symbol."
                 ),
             )
         if len(symbols) != 1:
@@ -326,7 +331,7 @@ class BioRAGClient:
                 status="ambiguous_probe_mapping",
                 retrieved_at=retrieved_at,
                 gene_symbols=list(symbols),
-                sources=["platform annotation"],
+                sources=[self.annotation_source],
             )
 
         symbol = symbols[0]
@@ -349,13 +354,13 @@ class BioRAGClient:
                     for candidate in gene.get("candidates", [])
                     if candidate.get("gene_symbol")
                 ],
-                sources=[NCBI_EUTILS_SOURCE],
+                sources=[self.annotation_source, NCBI_EUTILS_SOURCE],
                 detail=f"NCBI returned {len(gene.get('candidates', []))} candidate records.",
             )
 
         kegg_gene_id, _ = self._find_kegg_gene(symbol)
         pathways = self._get_gene_pathways(kegg_gene_id) if kegg_gene_id else []
-        sources = [NCBI_EUTILS_SOURCE]
+        sources = [self.annotation_source, NCBI_EUTILS_SOURCE]
         if kegg_gene_id:
             sources.append(KEGG_SOURCE)
         return self._response_model(

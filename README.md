@@ -68,27 +68,45 @@ cross-validation settings, calculate them on the current training fold.
 ## Bio-RAG probe resolution
 
 Opaque probe IDs require the correct platform annotation file. This client does
-not guess gene symbols from probe IDs. Supply a platform-specific CSV or TSV with
-probe and gene-symbol columns:
+not guess gene symbols from probe IDs. Golub uses the Hu6800 array, which NCBI
+identifies as GPL80; its checked-in annotation is in
+`data/annotation/gpl80_probe_to_gene_symbol.tsv`. GPL91 is the different
+HG-U95A platform and must not be used for the Golub matrix.
+
+Load that mapping and resolve a probe through it before NCBI/KEGG lookup:
 
 ```python
 from agentfs.bio_rag import BioRAGClient, load_probe_annotation
 
 annotation = load_probe_annotation(
-    "data/annotation/platform_annotation.tsv",
+    "data/annotation/gpl80_probe_to_gene_symbol.tsv",
     probe_column="Probe Set ID",
     gene_symbol_column="Gene Symbol",
 )
-client = BioRAGClient(annotation, organism="Homo sapiens", kegg_organism="hsa")
-context = client.resolve_probe("202421_at", platform="GPL96")
+client = BioRAGClient(
+    annotation,
+    organism="Homo sapiens",
+    kegg_organism="hsa",
+    annotation_source="NCBI GEO GPL80 annotation",
+)
+context = client.resolve_probe("M25079_s_at", platform="GPL80")
 print(context.model_dump_json(indent=2))
 ```
 
-The annotation file and column labels depend on the selected dataset/platform.
-The lookup returns explicit unmapped/ambiguous statuses, NCBI Gene summary and
-identifier where resolved, KEGG pathway records when available, source names,
-and retrieval time. Only probe/gene identifiers are sent to NCBI and KEGG; the
-expression matrix and sample labels remain local.
+The annotation file retains blank and multi-symbol rows. The client reports
+unmapped or ambiguous probe mappings explicitly instead of choosing a symbol
+without evidence. See `examples/resolve_golub_context.py` for a bounded live
+lookup that reads only the processed CSV header. Set `NCBI_EMAIL` before running
+it. Only mapped gene symbols and identifiers go to NCBI/KEGG; expression values
+and sample labels remain local. Annotation provenance and platform are included
+in each context result.
+
+Run a small live lookup from the repository root:
+
+```bash
+export NCBI_EMAIL="your-email@example.com"
+python examples/resolve_golub_context.py --limit 5
+```
 
 ## Track handoff contracts
 

@@ -20,6 +20,12 @@ KEGG REST. Its output is the Pydantic `ProbeGeneContext` schema. Unknown probes
 and ambiguous mappings are explicit results; network errors raise `BioRAGError`
 so callers can record/retry them. The client caches lookups within a process.
 
+The Golub reference matrix is Hu6800 and must use NCBI GEO GPL80 annotation
+(`data/annotation/gpl80_probe_to_gene_symbol.tsv`). GPL91 describes HG-U95A,
+not Hu6800. The Alon Colon source matrix has indexed `att_n` features rather
+than verified platform probe IDs, so those IDs must not be submitted to
+Bio-RAG without a separately verified platform annotation.
+
 Do not use a platform annotation for another array platform. A probe ID alone
 is not sufficient evidence to identify a gene. Record the annotation source
 and platform in the caller's dataset metadata.
