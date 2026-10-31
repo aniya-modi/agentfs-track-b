@@ -12,6 +12,7 @@ dependencies = ["biopython", "pydantic>=2", "requests", "numpy", "pandas"]
 [project.optional-dependencies]
 agents = ["langgraph"]
 dev = ["pytest", "ruff"]
+analysis = ["scikit-learn", "scipy"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
