@@ -107,6 +107,169 @@ below are exploratory and apply to the stated dataset and validation setup.
   reported split. Laplacian tuning selected `lambda_h = 0` in all five folds,
   effectively ignoring the graph penalty. Neither showed an accuracy gain.
 
+### Choose the hypergraph penalty from training folds
+
+- **Decision:** Tune `lambda_h` among candidate values with inner
+  `GridSearchCV`, scored by balanced accuracy, rather than selecting one value
+  before evaluation.
+- **Why:** The amount of pathway smoothing should be selected using training
+  data only. Including zero lets the model fall back to the gene-only form if
+  pathway smoothing does not help.
+- **Implementation:** This is already in the Colab hypergraph-Laplacian
+  experiment (Approach 3, Cell 24). It searches candidate graph strengths
+  inside each outer training fold, then evaluates the refitted choice on the
+  held-out outer fold.
+- **Outcome:** In the initial five-fold run, `lambda_h = 0` was selected in all
+  five folds. The repeated nested-CV comparison (3 repeats × 5 outer folds)
+  also selected `lambda_h = 0` in all 15 folds. Mean balanced accuracy was
+  0.9522 for the adaptive estimator and 0.9507 for the matched gene-only
+  baseline; paired mean differences by repeat were +0.0111, -0.0089, and
+  +0.0022. Since the graph penalty was zero in every fold, these small score
+  differences do not show a benefit from pathway regularization. They may
+  reflect implementation or optimizer differences and should not be claimed
+  as a hypergraph gain.
+- **Runtime fix:** Colab raised `BrokenProcessPool` because process workers
+  could not deserialize the notebook-defined `expit` reference when the
+  Laplacian `GridSearchCV` used `n_jobs=-1`. Both searches in the repeated
+  comparison now use `n_jobs=1`, which avoids that serialization path. A prior
+  `NameError: X is not defined` was due to a restarted Colab runtime; rerunning
+  prerequisite cells restored the variables.
+- **Status:** Implemented and evaluated in Colab Approach 3, Cell 24 and
+  Approach 4, Cell 25. A readable output summary was added in Cell 26. The
+  notebook edits are saved; no repository estimator or source code was
+  changed.
+
+### Score genes and pathways for the ALL-versus-AML distinction
+
+- **Decision:** Add a binary class-aware selector that ranks probes by the
+  absolute ALL-versus-AML effect size, then blends that rank with a pathway
+  score derived from member-gene effects.
+- **Formula:** Per probe, signed Cohen's `d` is
+  `(mean_AML - mean_ALL) / pooled_standard_deviation`. The signed value shows
+  which class has higher expression; its absolute value ranks separation. A
+  pathway score is the mean of the strongest 25% absolute member-gene effects.
+  The selector blends normalized gene and pathway ranks as
+  `alpha * gene_rank + (1 - alpha) * propagated_pathway_rank`.
+- **Why:** This makes the selection target explicit: genes and pathways should
+  help distinguish ALL from AML. If further cancer classes are added later,
+  the scoring rule will need a multi-class extension.
+- **Validation:** The scores are calculated inside each model's training fold.
+  `alpha`, selected feature count, and logistic-regression `C` are tuned by
+  inner CV. The matched F-score/logistic baseline uses identical repeated
+  outer folds (3 repeats × 5 folds).
+- **Outcome:** Mean balanced accuracy was 0.9552 for class-aware gene plus
+  pathway selection and 0.9544 for the baseline. Paired mean differences by
+  repeat were +0.0111, 0.0000, and -0.0089. This small, inconsistent change
+  does not establish an accuracy improvement. The 20 most frequently selected
+  probes appeared in all 15 outer folds in this run; selection consistency
+  alone does not establish biological or clinical validity.
+- **Status:** Implemented and evaluated in Colab Approach 5, Cell 27. The
+  notebook changes are saved; no repository estimator or source code was
+  changed.
+
+### Reward complementary genes and discount repeated expression signals
+
+- **Decision:** Add a greedy selector that starts from fold-local ALL/AML gene
+  and pathway relevance, then reduces a candidate's score when it correlates
+  strongly with a gene already selected.
+- **Formula:** `score(g | S) = relevance(g) * (1 - gamma *
+  max_{s in S} |corr(g,s)|)`. Here `relevance` blends normalized absolute
+  Cohen's-d gene ranks and pathway-propagated ranks; `gamma` controls the
+  redundancy penalty and is selected in inner CV. The first gene is selected
+  by relevance alone. This pairwise-correlation proxy is an mRMR-style
+  approximation; it does not model all higher-order interactions.
+- **Why:** A large differential signal is useful, but a gene that repeats the
+  expression pattern of an already selected gene may add little information.
+  Greedy selection favors relevant genes that contribute a less redundant
+  signal.
+- **Validation:** Compared with a matched F-score/logistic baseline on the same
+  3-repeat × 5-fold outer splits. Feature count, pathway blend, redundancy
+  penalty, and classifier strength were tuned within inner CV. Redundancy was
+  summarized as mean absolute pairwise correlation among selected probes,
+  calculated on outer training folds only.
+- **Outcome:** Mean balanced accuracy was 0.9589 for complementary gene plus
+  pathway selection versus 0.9507 for the baseline; paired differences by
+  repeat were +0.0111, +0.0111, and +0.0022. Mean selected-set correlation was
+  0.3395 versus 0.4701 for the top-k F-score genes at matched feature count
+  (about 27.8% lower). The inner search selected a nonzero `gamma` in 8 of 15
+  folds. This is a promising result on one small dataset, not independent or
+  clinical validation and not proof of a general accuracy gain.
+- **Status:** Implemented and evaluated in Colab Approach 6, Cell 28. The
+  notebook changes are saved; no repository estimator or source code was
+  changed.
+
+### Test for nonlinear gene-combination patterns
+
+- **Decision:** Compare regularized logistic regression with an RBF-kernel
+  support-vector machine (SVM) on the same Golub data and repeated outer
+  folds. Both models use the same fold-local F-score gene selector,
+  imputation, scaling, and nested tuning. The SVM's `C` and `gamma` are chosen
+  using inner CV only.
+- **Why:** Logistic regression learns a linear boundary. An RBF SVM can learn
+  curved boundaries and interactions among the selected genes, so this is a
+  first check for patterns the linear model may miss.
+- **Validation:** Colab Approach 7, Cell 29; Golub ALL/AML (72 samples,
+  7,129 probes), 3 repeats × 5 stratified outer folds, with 3-fold inner CV
+  for tuning. On each outer training fold, both models tune the selected gene
+  count from `[50, 100, 200, 500]` and `C` from `[0.01, 0.1, 1, 10]`; the RBF
+  model also tunes `gamma` from `['scale', 0.001, 0.01, 0.1]`. The outer test
+  fold is held out for scoring.
+- **Outcome:** Mean accuracy was 0.9533 for both models. Mean balanced
+  accuracy was 0.9552 for logistic regression and 0.9522 for RBF SVM; mean
+  macro F1 was 0.9494 and 0.9488, respectively. Repeat-wise paired balanced-
+  accuracy differences (RBF minus linear) were 0.0000, -0.0100, and +0.0011.
+  This experiment did not show a predictive gain from using the nonlinear
+  classifier on the selected genes.
+- **Limitation:** The F-score preselection favors genes with individual
+  class-separation signals. It can discard genes that are useful only through
+  interactions. Therefore this result does not rule out nonlinear patterns
+  among genes outside that candidate set, or nonlinear effects within a
+  pathway-aware selected set. The next useful comparison is to apply the RBF
+  model to the fold-local class-aware/complementary hypergraph-selected genes
+  and compare against logistic regression using the same selected features and
+  outer folds.
+- **Status:** Implemented and evaluated in Colab Approach 7, Cell 29. This is
+  a notebook experiment; no repository source code was changed.
+
+### Direct non-linear comparison with complementary hypergraph selection
+
+- **Decision:** Test whether an RBF SVM helps when both nonlinear and linear
+  classifiers receive features from the same fold-local complementary
+  hypergraph selector.
+- **Why:** The earlier nonlinear screen used only univariate F-score selection
+  and could have excluded genes useful through interactions. This direct test
+  checks the classifier on genes selected with the pathway-aware,
+  class-aware, redundancy-reducing method already evaluated in Approach 6.
+- **Validation:** Colab Approach 8, Cell 30; Golub ALL/AML (72 samples,
+  7,129 probes), 3 repeats × 5 stratified outer folds, with 2-fold inner CV.
+  Both pipelines used fold-local median imputation, the same
+  `ComplementaryGeneSelector(H=H)`, and standard scaling. The displayed output
+  reports tuning feature count, pathway blend, redundancy weight, and
+  classifier settings with balanced accuracy as the inner-CV metric; outer
+  folds were used for final scoring. The exact feature-count grid needs
+  reconciliation with the current cell source before the run is reproducible.
+- **Outcome:** Linear logistic regression averaged 0.9584 accuracy (SD
+  0.0510), 0.9589 balanced accuracy (SD 0.0482), and 0.9550 macro F1 (SD
+  0.0539). RBF SVM averaged 0.9540 accuracy (SD 0.0552), 0.9459 balanced
+  accuracy (SD 0.0693), and 0.9477 macro F1 (SD 0.0646). Paired outer-fold
+  balanced-accuracy differences (RBF minus logistic), averaged within each
+  repeat, were +0.0211, -0.0300, and -0.0300. The nonlinear model did not
+  improve the overall average; logistic regression was higher on all three
+  aggregate metrics.
+- **Limitation:** This is an exploratory repeated-CV estimate on one small
+  dataset, not independent or clinical validation. Repeated folds overlap in
+  their training samples, so they are not 15 independent experiments. The
+  result does not show that all nonlinear gene interactions are absent.
+- **Reproducibility check:** The completed Cell 30 output reports inner-CV
+  selections with `selector__top_k=200`, but the currently visible cell source
+  searches only `[50, 100]`. The displayed output therefore does not match the
+  current source. The scores below are provisional until Cell 30 is rerun with
+  the source and output aligned; confirm the selected feature-count grid in
+  that run before treating these metrics as reproducible.
+- **Status:** A run completed in Colab Approach 8, Cell 30, but source/output
+  reconciliation and a matching rerun are pending. No repository source code
+  was changed.
+
 ## Decided but not implemented
 
 The following are accepted as **future experiments to investigate**, based on
@@ -115,10 +278,8 @@ coded, evaluated, or shown to improve accuracy.
 
 | Decision | Why we want to investigate it | Implementation/evaluation still needed | Status |
 | --- | --- | --- | --- |
-| Adaptive hypergraph regularization | A data-selected graph penalty may work better than one fixed penalty. | Tune the graph strength only inside inner CV; record chosen strengths across outer folds. | Decided; not implemented |
-| Class-aware hypergraph or gene selection | Use the ALL/AML distinction directly when scoring relevant genes and pathways. | Define a fold-local class-aware scoring rule. “Multi-class” only applies if additional disease classes are added. | Decided; not implemented |
-| Complementary gene scoring | Prefer genes that add new predictive information, not several genes carrying nearly the same signal. | Define and test a conditional/complementarity score inside each training fold; compare selected-set redundancy and prediction metrics. | Decided; not implemented |
-| Non-linear dependency model | Gene combinations may contain patterns that a linear classifier misses. | Compare a suitable non-linear candidate against the same baseline and splits, with all tuning nested. | Decided to investigate; not implemented |
+| A different adaptive penalty rule beyond the existing CV grid | The current CV grid chose zero in each fold; a richer rule may be worth exploring only if it has a clear rationale. | Specify a distinct formula first, then compare it with the current inner-CV-tuned method and zero-penalty baseline using repeated nested CV. | Deferred; no distinct method implemented |
+| Non-linear model on hypergraph-selected features | The first RBF-SVM screen on F-score-selected genes did not outperform logistic regression, but F-score preselection can miss interaction-only genes. | Align Cell 30 source and output, rerun the direct comparison, then use the matching result as exploratory evidence and seek external validation. | Run completed; reproducibility check and source-aligned rerun pending |
 | Gene-selection stability | Genes repeatedly selected across resamples may be more reliable than genes selected in only one split. | Track selection frequency across repeated nested CV and, if available, a separate cohort. | Decided; not implemented |
 | Classifier-aware selection | A gene set useful to one classifier may not be useful to another. | Consider joint selector/classifier tuning after the preceding experiments; guard against an overly large search. | Deferred; not implemented |
 
@@ -126,10 +287,11 @@ coded, evaluated, or shown to improve accuracy.
 
 1. Audit the notebook to confirm preprocessing and feature selection are
    training-fold-only, then freeze the baseline and evaluation splits.
-2. Implement adaptive regularization and class-aware/complementary scoring as
-   separate experiments, one at a time.
-3. Test non-linear models as separate candidates under the same nested
-   evaluation.
+2. Review why the inner search selects zero in every fold; inspect the
+   objective, penalty scale, and candidate grid before claiming pathway
+   regularization is contributing.
+3. Only if justified, define a distinct adaptive-penalty rule and compare it
+   with the existing inner-CV grid on the same repeated outer splits.
 4. Measure selection stability across repeats and independent data when
    available.
 5. Revisit classifier-aware selection after these results are understood.
