@@ -270,6 +270,72 @@ below are exploratory and apply to the stated dataset and validation setup.
   reconciliation and a matching rerun are pending. No repository source code
   was changed.
 
+## Month 2 selectors and benchmark implementation (2026-11-16)
+
+### Add mRMR and explicit L1 selectors
+
+- **Decision:** Compare F-score selection with mRMR and L1-regularized logistic
+  feature ranking.
+- **Why:** mRMR trades off ALL/AML relevance against correlated duplicate
+  signals. L1 logistic regression provides a sparse-model-based ranking.
+- **Implementation:** `MRMRSelector` learns ANOVA relevance and feature
+  correlations in `fit`; `LassoSelector` standardizes training features and
+  explicitly sets `penalty="l1"` with the `liblinear` solver. Both expose
+  sklearn-compatible `transform` and `get_support` methods.
+- **Status:** Implemented in `src/agentfs/baseline_selectors.py`. This change
+  does not claim either selector improves accuracy; results must come from the
+  repeated nested-CV benchmark.
+
+### Evaluate selectors using repeated nested cross-validation
+
+- **Decision:** Keep imputation, selection, scaling, model tuning, and
+  classifier fitting inside nested CV. Report accuracy, balanced accuracy,
+  macro F1, and feature stability across repeated outer folds.
+- **Why:** With 7,129 probes and only 72 samples, fitting selection on all
+  samples before splitting would leak label information into evaluation.
+- **Implementation:** `run_repeated_nested_cv` uses 3 inner folds and repeated
+  stratified outer folds by default. It records selected indices, Jaccard
+  stability, and the best settings per fold. The benchmark separately
+  calculates Kuncheva stability for fixed-size selections.
+- **Status:** Implemented in `src/agentfs/evaluation.py` and
+  `examples/benchmark_feature_selectors.py`. No benchmark run is recorded by this code
+  change.
+
+### Treat screened knockoffs as exploratory
+
+- **Decision:** Do not report formal FDR control for a workflow that first
+  selects candidates using ANOVA or mutual information computed with class
+  labels.
+- **Why:** The label-informed screen and unverified Gaussian Model-X
+  assumptions do not establish a formal FDR guarantee. Forcing a minimum
+  number of selected probes would also break fidelity to knockoff rejections.
+- **Implementation:** `TwoStageKnockoffFilter` reports the threshold as a
+  requested value, sets `formal_fdr_control_` to false, and returns exactly the
+  knockoff rejections without a minimum-feature fallback. `knockpy` is an
+  optional analysis dependency.
+- **Status:** Implemented in `src/agentfs/knockoff_selector.py` and
+  `pyproject.toml`. It is an exploratory selector, not a validated biomarker
+  or diagnostic method.
+
+### Preserve KEGG inputs and make the joint report explicitly exploratory
+
+- **Decision:** Cache the KEGG API responses used to make pathway memberships,
+  and label the full-data probe report as exploratory.
+- **Why:** Live pathway data can change between runs, and the joint report uses
+  the full Golub labels to choose probes; it is not a held-out performance
+  estimate. It must not be described as clinical evidence.
+- **Implementation:** `benchmark_feature_selectors.py` saves the KEGG responses and
+  prints their SHA-256 hashes. `generate_gene_pathway_report.py` records its full-data
+  selection status, requested knockoff threshold, and absence of formal FDR
+  control in the JSON report. Live NCBI lookup requires `NCBI_EMAIL` from the
+  environment.
+- **Dependency boundary:** The joint example currently uses the existing
+  `BioStatSoftRedundancySelector` from `main`. It does not depend on or change
+  the centrality selector being brought in separately by `e35d11d`; it can be
+  switched to that selector after the planned merge.
+- **Status:** Implemented in the two Month 2 examples. No live API request or
+  output report was generated during implementation.
+
 ## Decided but not implemented
 
 The following are accepted as **future experiments to investigate**, based on

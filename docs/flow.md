@@ -31,6 +31,8 @@ analysis path.
        |  Gene-only baseline         Pathway/hypergraph experiments     |
        |  rank + logistic regression  gene nodes + pathway hyperedges    |
        |       |                            |                           |
+       |       +--> mRMR / L1 selection / screened knockoff experiment   |
+       |                     |                                          |
        |       +-------------+--------------+                           |
        |                     v                                          |
        |       Fold-local nested/repeated CV                            |
@@ -244,6 +246,25 @@ visible source version.
   evaluating future runs.
 - Treat cross-validation as research evaluation, not clinical validation.
 
+### 8. Month 2 selector and context workflow
+
+1. Load the processed Golub matrix with GPL80 probe IDs and the ALL/AML labels.
+2. Build a probe-by-KEGG-pathway incidence matrix using the matching GPL80
+   annotation. The first API responses are cached under
+   `data/reference/kegg_snapshot/`; their hashes are printed for provenance.
+3. Compare an F-score baseline, mRMR, L1 logistic selection, and the existing
+   biological/statistical soft-redundancy selector. Imputation, selector
+   fitting, scaling, and logistic tuning run inside nested CV folds.
+4. Summarize prediction metrics and stability across repeated stratified outer
+   folds. These are exploratory estimates on one small dataset.
+5. Optionally run the supervised-screen/knockoff sequence. It reports the
+   requested knockoff threshold but makes no formal FDR claim; if the rule
+   selects no features, it does not force any through.
+6. The combined example applies pathway-aware redundancy scoring to selected
+   probes and resolves biological context through Bio-RAG. It uses all sample
+   labels for an exploratory report, not held-out evaluation. Set `NCBI_EMAIL`
+   for live NCBI requests.
+
 ## Proposed next implementation flow
 
 The nonlinear comparison has run, but its source/output reconciliation and
@@ -272,4 +293,10 @@ matching rerun remain pending; other experiments are still planned:
 | `src/agentfs/schemas.py` | Validate structured configs and biological context records |
 | `src/agentfs/agent_state.py` | Define typed state for later agent orchestration |
 | `src/agentfs/hypergraph_experiments.py` | Fold-local pathway and redundancy experiment components |
+| `src/agentfs/baseline_selectors.py` | Fold-local mRMR and L1 logistic feature selectors |
+| `src/agentfs/evaluation.py` | Repeated nested-CV metrics and feature stability |
+| `src/agentfs/knockoff_selector.py` | Exploratory supervised screening and knockoff selection |
+| `src/agentfs/kegg.py` | Cached KEGG REST responses and probe/pathway incidence builder |
+| `examples/benchmark_feature_selectors.py` | Repeated nested-CV benchmark for feature selectors |
+| `examples/generate_gene_pathway_report.py` | Exploratory selected-probe and Bio-RAG report |
 | `baseline_benchmark.ipynb` | Repository benchmark notebook; the detailed Colab workflow may be maintained separately |
