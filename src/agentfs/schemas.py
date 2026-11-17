@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
 
 SelectionMethod = Literal["hypergraph_centrality", "mrmr", "lasso"]
 MappingStatus = Literal[
@@ -40,6 +40,35 @@ class AgentDebateDecision(StrictSchema):
     confidence: float = Field(ge=0.0, le=1.0)
 
 
+class AgentProposal(StrictSchema):
+    """One validated feature-selection proposal with its rationale."""
+
+    config: FeatureSelectionConfig
+    rationale: str = Field(min_length=1, max_length=2000)
+
+
+class PlannerOutput(StrictSchema):
+    proposals: list[AgentProposal] = Field(min_length=1, max_length=20)
+    summary: str = Field(default="", max_length=2000)
+
+
+class BioRefinerOutput(StrictSchema):
+    proposals: list[AgentProposal] = Field(min_length=1, max_length=20)
+    biological_summary: str = Field(min_length=1, max_length=3000)
+
+
+class ChallengerOutput(StrictSchema):
+    objections: list[str] = Field(default_factory=list, max_length=20)
+    feedback: list[str] = Field(default_factory=list, max_length=20)
+    requires_revision: bool = False
+
+
+class JudgeOutput(StrictSchema):
+    decision: AgentDebateDecision
+    needs_revision: bool = False
+    feedback: list[str] = Field(default_factory=list, max_length=20)
+
+
 class PathwayRecord(StrictSchema):
     """Pathway result with database identifiers and a readable description."""
 
@@ -66,3 +95,24 @@ class ProbeGeneContext(StrictSchema):
     sources: list[str] = Field(default_factory=list)
     retrieved_at: datetime
     detail: str | None = None
+
+
+class AgentGraphInput(StrictSchema):
+    """Validated, sample-safe input accepted by the four-agent graph."""
+
+    dataset_id: str = Field(min_length=1, max_length=200)
+    metadata_profile: dict[str, Any] = Field(default_factory=dict)
+    probe_ids: list[str] = Field(default_factory=list, max_length=20_000)
+    gene_contexts: list[ProbeGeneContext] = Field(default_factory=list, max_length=20_000)
+    proposed_configs: list[FeatureSelectionConfig] = Field(default_factory=list, max_length=20)
+    max_agent_retries: StrictInt = Field(default=2, ge=0, le=5)
+    max_revision_rounds: StrictInt = Field(default=2, ge=0, le=5)
+
+    @model_validator(mode="after")
+    def require_selector_sized_dataset(self) -> AgentGraphInput:
+        n_features = self.metadata_profile.get("n_features")
+        if not isinstance(n_features, int) or n_features <= 0:
+            n_features = len(self.probe_ids) or None
+        if n_features is not None and n_features < 5:
+            raise ValueError("The current feature-selection contracts require at least 5 features.")
+        return self
