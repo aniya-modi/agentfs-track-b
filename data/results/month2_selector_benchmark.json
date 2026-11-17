@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-11-17T15:56:35.865989+00:00",
+  "dataset": {
+    "id": "golub-hu6800",
+    "n_samples": 72,
+    "n_features": 7129
+  },
+  "evaluation": {
+    "outer_splits": 5,
+    "outer_repeats": 3,
+    "inner_splits": 3,
+    "scoring": "balanced_accuracy",
+    "random_state": 42
+  },
+  "kegg": {
+    "snapshot_sha256": {
+      "link_pathway_hsa.tsv": "3ec243e3a189a81e20fd5034c53de1555dcd80094211938639a56e0e3de97a05",
+      "list_hsa.tsv": "ec3c5896ed611b526b681d40a95ac593b802954574a36e357bf1827e70db94e3"
+    },
+    "n_probes": 7129,
+    "n_pathways": 373,
+    "n_memberships": 31513
+  },
+  "git": {
+    "commit": "a42cca50a65a0118eed8b75645e8d5ca6f77ad13",
+    "worktree_dirty": true
+  },
+  "packages": {
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.1",
+    "agentfs-track-b": "0.1.0"
+  },
+  "results_file": "month2_selector_benchmark.csv"
+}

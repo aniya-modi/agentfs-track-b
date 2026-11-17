@@ -40,7 +40,24 @@ def main() -> None:
     )
 
     if not candidate_probes:
-        print("No probes passed the knockoff selection rule; stopping without forcing genes.")
+        report = {
+            "purpose": "exploratory full-dataset feature and pathway review",
+            "uses_full_dataset_labels_for_selection": True,
+            "formal_fdr_control": False,
+            "requested_knockoff_threshold": selector.fdr_target_,
+            "screening_method": selector.screening_method_,
+            "n_features_total": int(X.shape[1]),
+            "n_features_screened": selector.n_features_screened_,
+            "n_features_selected": selector.n_features_selected_,
+            "selection_outcome": "no_features_passed",
+            "kegg_snapshot_sha256": None,
+            "records": [],
+        }
+        output_path = PROJECT_ROOT / "data/results/gene_pathway_context_report.json"
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(report, indent=2))
+        print("No probes passed the knockoff selection rule; no genes were forced through.")
+        print(f"Exploratory report saved to {output_path}")
         return
 
     H, hashes = build_kegg_incidence(candidate_probes, annotation_path=ANNOTATION_PATH)
@@ -71,8 +88,10 @@ def main() -> None:
         "formal_fdr_control": False,
         "requested_knockoff_threshold": selector.fdr_target_,
         "screening_method": selector.screening_method_,
+        "n_features_total": int(X.shape[1]),
         "n_features_screened": selector.n_features_screened_,
         "n_features_selected": selector.n_features_selected_,
+        "selection_outcome": "features_selected",
         "kegg_snapshot_sha256": hashes,
         "records": resolved_records,
     }

@@ -56,13 +56,15 @@ def build_kegg_incidence(
 
     kegg_id_to_symbols: dict[str, set[str]] = {}
     for line in genes_text.splitlines():
-        fields = line.split("\t", maxsplit=1)
-        if len(fields) != 2:
+        fields = line.split("\t")
+        if len(fields) < 2:
             continue
-        gene_id, description = fields
+        gene_id = fields[0]
+        # Current list/hsa rows are: gene_id, type, position, "SYM1,SYM2; description".
+        names = fields[3] if len(fields) >= 4 else fields[1]
         symbols = {
             item.strip().upper()
-            for item in description.split(";", maxsplit=1)[0].split(",")
+            for item in names.split(";", maxsplit=1)[0].split(",")
             if item.strip()
         }
         if symbols:

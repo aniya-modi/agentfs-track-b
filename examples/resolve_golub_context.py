@@ -36,6 +36,11 @@ def main() -> None:
         default=5,
         help="Number of leading processed feature IDs to resolve when --probe is omitted.",
     )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Write all lookup records as a JSON array to this path.",
+    )
     args = parser.parse_args()
     if args.limit < 1:
         parser.error("--limit must be at least 1")
@@ -53,23 +58,26 @@ def main() -> None:
         annotation_source=ANNOTATION_SOURCE,
     )
 
+    records: list[dict[str, object]] = []
     for probe_id in probe_ids:
         try:
             context = client.resolve_probe(probe_id, platform="GPL80")
-            print(context.model_dump_json(indent=2))
+            record = context.model_dump(mode="json")
         except BioRAGError as exc:
-            print(
-                json.dumps(
-                    {
-                        "probe_id": probe_id,
-                        "platform": "GPL80",
-                        "status": "lookup_error",
-                        "detail": str(exc),
-                        "sources": [ANNOTATION_SOURCE],
-                    },
-                    indent=2,
-                )
-            )
+            record = {
+                "probe_id": probe_id,
+                "platform": "GPL80",
+                "status": "lookup_error",
+                "detail": str(exc),
+                "sources": [ANNOTATION_SOURCE],
+            }
+        records.append(record)
+        print(json.dumps(record, indent=2))
+
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(records, indent=2))
+        print(f"Saved {len(records)} lookup records to {args.output}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,13 @@
+{
+  "purpose": "exploratory full-dataset feature and pathway review",
+  "uses_full_dataset_labels_for_selection": true,
+  "formal_fdr_control": false,
+  "requested_knockoff_threshold": 0.1,
+  "screening_method": "anova",
+  "n_features_total": 7129,
+  "n_features_screened": 250,
+  "n_features_selected": 0,
+  "selection_outcome": "no_features_passed",
+  "kegg_snapshot_sha256": null,
+  "records": []
+}

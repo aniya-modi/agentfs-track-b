@@ -1,0 +1,123 @@
+[
+  {
+    "probe_id": "A28102_at",
+    "platform": "GPL80",
+    "organism": "Homo sapiens",
+    "status": "resolved",
+    "gene_symbols": [
+      "GABRA3"
+    ],
+    "candidate_gene_ids": [],
+    "candidate_gene_symbols": [],
+    "gene_symbol": "GABRA3",
+    "ncbi_gene_id": "2556",
+    "gene_summary": "GABA is the major inhibitory neurotransmitter in the mammalian brain where it acts at GABA-A receptors, which are ligand-gated chloride channels. Chloride conductance of these channels can be modulated by agents such as benzodiazepines that bind to the GABA-A receptor. At least 16 distinct subunits of GABA-A receptors have been identified. [provided by RefSeq, Jul 2008]",
+    "kegg_gene_id": "hsa:2556",
+    "pathways": [
+      {
+        "pathway_id": "hsa04080",
+        "name": "Neuroactive ligand-receptor interaction - Homo sapiens (human)",
+        "source": "KEGG"
+      },
+      {
+        "pathway_id": "hsa04082",
+        "name": "Neuroactive ligand signaling - Homo sapiens (human)",
+        "source": "KEGG"
+      },
+      {
+        "pathway_id": "hsa04519",
+        "name": "Cadherin signaling - Homo sapiens (human)",
+        "source": "KEGG"
+      },
+      {
+        "pathway_id": "hsa04723",
+        "name": "Retrograde endocannabinoid signaling - Homo sapiens (human)",
+        "source": "KEGG"
+      },
+      {
+        "pathway_id": "hsa04727",
+        "name": "GABAergic synapse - Homo sapiens (human)",
+        "source": "KEGG"
+      },
+      {
+        "pathway_id": "hsa04742",
+        "name": "Taste transduction - Homo sapiens (human)",
+        "source": "KEGG"
+      },
+      {
+        "pathway_id": "hsa04900",
+        "name": "Neuroendocrine signaling pathway of hypothalamus-pituitary axis - Homo sapiens (human)",
+        "source": "KEGG"
+      },
+      {
+        "pathway_id": "hsa05032",
+        "name": "Morphine addiction - Homo sapiens (human)",
+        "source": "KEGG"
+      },
+      {
+        "pathway_id": "hsa05033",
+        "name": "Nicotine addiction - Homo sapiens (human)",
+        "source": "KEGG"
+      }
+    ],
+    "sources": [
+      "NCBI GEO GPL80.annot.gz (Hu6800; annotation build 35, 2016-08-09)",
+      "NCBI Gene E-utilities",
+      "KEGG REST API"
+    ],
+    "retrieved_at": "2026-11-17T15:55:17.164467Z",
+    "detail": null
+  },
+  {
+    "probe_id": "AB000114_at",
+    "platform": "GPL80",
+    "organism": "Homo sapiens",
+    "status": "resolved",
+    "gene_symbols": [
+      "OMD"
+    ],
+    "candidate_gene_ids": [],
+    "candidate_gene_symbols": [],
+    "gene_symbol": "OMD",
+    "ncbi_gene_id": "4958",
+    "gene_summary": "Predicted to be involved in cell adhesion. Located in extracellular exosome. [provided by Alliance of Genome Resources, Jul 2025]",
+    "kegg_gene_id": "hsa:4958",
+    "pathways": [],
+    "sources": [
+      "NCBI GEO GPL80.annot.gz (Hu6800; annotation build 35, 2016-08-09)",
+      "NCBI Gene E-utilities",
+      "KEGG REST API"
+    ],
+    "retrieved_at": "2026-11-17T15:55:21.859498Z",
+    "detail": null
+  },
+  {
+    "probe_id": "AB000220_at",
+    "platform": "GPL80",
+    "organism": "Homo sapiens",
+    "status": "resolved",
+    "gene_symbols": [
+      "SEMA3C"
+    ],
+    "candidate_gene_ids": [],
+    "candidate_gene_symbols": [],
+    "gene_symbol": "SEMA3C",
+    "ncbi_gene_id": "10512",
+    "gene_summary": "This gene encodes a secreted glycoprotein that belongs to the semaphorin class 3 family of neuronal guidance cues. The encoded protein contains an N-terminal sema domain, integrin and immunoglobulin-like domains, and a C-terminal basic domain. Homodimerization and proteolytic cleavage of the C-terminal propeptide are necessary for the function of the encoded protein. It binds a neuropilin co-receptor before forming a heterotrimeric complex with an associated plexin. An increase in the expression of this gene correlates with an increase in cancer cell invasion and adhesion. Naturally occurring mutations in this gene are associated with Hirschsprung disease. [provided by RefSeq, May 2017]",
+    "kegg_gene_id": "hsa:10512",
+    "pathways": [
+      {
+        "pathway_id": "hsa04360",
+        "name": "Axon guidance - Homo sapiens (human)",
+        "source": "KEGG"
+      }
+    ],
+    "sources": [
+      "NCBI GEO GPL80.annot.gz (Hu6800; annotation build 35, 2016-08-09)",
+      "NCBI Gene E-utilities",
+      "KEGG REST API"
+    ],
+    "retrieved_at": "2026-11-17T15:55:24.778133Z",
+    "detail": null
+  }
+]

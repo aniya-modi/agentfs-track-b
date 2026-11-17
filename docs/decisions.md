@@ -336,6 +336,82 @@ below are exploratory and apply to the stated dataset and validation setup.
 - **Status:** Implemented in the two Month 2 examples. No live API request or
   output report was generated during implementation.
 
+## Month 2 verification run (2026-11-17)
+
+### Rebuild and commit the KEGG snapshot
+
+- **What was run:** `build_kegg_incidence(...)` on the 7,129 Golub Hu6800
+  probes. The two KEGG REST responses are now cached in
+  `data/reference/kegg_snapshot/`:
+  - `link_pathway_hsa.tsv` — SHA-256
+    `3ec243e3a189a81e20fd5034c53de1555dcd80094211938639a56e0e3de97a05`
+  - `list_hsa.tsv` — SHA-256
+    `ec3c5896ed611b526b681d40a95ac593b802954574a36e357bf1827e70db94e3`
+- **Result:** `H` is 7,129 probes × 373 KEGG pathways with 31,513 memberships;
+  4,555 probes have at least one pathway (mean 6.9 pathways per covered probe).
+- **Parser fix:** current `list/hsa` rows have four tab-separated fields
+  (`gene_id`, type, position, `"SYM1,SYM2; description"`). The original parser
+  split on the first tab only, so gene symbols were read from the position
+  column and coverage collapsed to 473 probes. `src/agentfs/kegg.py` now reads
+  the names field for four-column rows and keeps the two-column fallback.
+- **Validity note:** any incidence matrix built with the previous parser
+  undercovered the pathway network and must be rebuilt. No H-based benchmark
+  result had been committed before this run, so there is no recorded score to
+  retract. The remaining gap is expected: 6,327 probes map to a KEGG gene, but
+  KEGG lists pathway links for 9,472 of 24,252 human genes.
+
+### Benchmark the Month 2 selectors
+
+- **Setup:** Golub ALL/AML, 72 samples × 7,129 probes; 3 repeats × 5
+  stratified outer folds, 3 inner folds, balanced-accuracy tuning, seed 42.
+  Imputation, selection, scaling, and classifier tuning stay inside the
+  training folds.
+- **Artifacts:** `data/results/month2_selector_benchmark.csv` and
+  `data/results/month2_selector_benchmark.json`. The JSON records the git
+  commit, dirty-worktree flag, CV settings, KEGG hashes, and package versions
+  (Python 3.13.10, numpy 2.5.5, pandas 3.1.1, scipy 1.18.1,
+  scikit-learn 1.9.1).
+- **Results (mean ± SD across 15 outer folds):**
+
+| Method | Accuracy | Balanced accuracy | Macro F1 | Jaccard (tuned) | Kuncheva (fixed k) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Univariate F-score baseline | 0.9717 ± 0.0433 | 0.9689 ± 0.0489 | 0.9689 ± 0.0475 | 0.4899 | 0.7029 |
+| mRMR | 0.9717 ± 0.0433 | 0.9722 ± 0.0457 | 0.9694 ± 0.0471 | 0.4171 | 0.6382 |
+| L1 logistic selector | 0.9622 ± 0.0630 | 0.9589 ± 0.0769 | 0.9572 ± 0.0729 | 0.4555 | 0.6593 |
+| Biological/statistical soft redundancy | 0.9483 ± 0.0608 | 0.9444 ± 0.0686 | 0.9429 ± 0.0677 | 0.4039 | 0.5872 |
+
+- **Interpretation:** mRMR has the highest mean balanced accuracy by 0.0033
+  over the F-score baseline, with lower stability. The pathway-aware
+  soft-redundancy selector is lower on every prediction metric here, which is
+  consistent with the earlier Colab result that pathway evidence did not
+  improve accuracy. These are exploratory estimates on one small dataset;
+  repeated folds overlap and are not independent trials.
+
+### Verify live Bio-RAG and the knockoff rule
+
+- **Live lookup:** three resolvable GPL80 probes were resolved through NCBI
+  Gene E-utilities and KEGG REST and saved to
+  `data/results/bio_rag_probe_lookup.json`:
+  - `A28102_at` → GABRA3, NCBI 2556, KEGG hsa:2556, 9 pathways
+  - `AB000114_at` → OMD, NCBI 4958, KEGG hsa:4958, 0 pathways
+  - `AB000220_at` → SEMA3C, NCBI 10512, KEGG hsa:10512, 1 pathway
+  The first five processed feature columns are blank or multi-symbol
+  (e.g. HBD/HBB), so the default `--limit 5` example returns explicit
+  `unmapped_probe` or `ambiguous_probe_mapping` records without guessing.
+- **Knockoff outcome:** the ANOVA screen to 250 features followed by the
+  knockpy filter at the requested 0.10 threshold rejected 0 of 7,129 probes.
+  The negative result is persisted in
+  `data/results/gene_pathway_context_report.json` with
+  `"selection_outcome": "no_features_passed"`; no features were forced
+  through. This remains a requested threshold, not formal FDR control.
+- **Commands:** `NCBI_EMAIL=<set locally> python
+  examples/generate_gene_pathway_report.py` and `python
+  examples/benchmark_feature_selectors.py`, both from the repository root.
+
+- **Status:** Month 2 now has committed snapshot inputs and recorded outputs.
+  The incidence matrix is still KEGG-only (no Reactome or GO), and all
+  prediction numbers remain exploratory.
+
 ## Four-agent orchestration (2026-11-17)
 
 ### Build a validated Planner, Bio-Refiner, Challenger, and Judge graph
