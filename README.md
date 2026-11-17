@@ -1,9 +1,9 @@
 # AgentFS Track B
 
 Track B provides the metadata and biological context layer for the
-pathway-informed feature-selection project. Month 1 delivers a local metadata
-profiler, a platform-annotation-based NCBI/KEGG client, and validated contracts
-for the later agent workflow.
+pathway-informed feature-selection project, including a local metadata
+profiler, a platform-annotation-based NCBI/KEGG client, validated contracts,
+and a four-role LangGraph decision workflow.
 
 ## Environment setup
 
@@ -16,9 +16,19 @@ python -m pip install --upgrade pip
 python -m pip install -e ".[agents]"
 ```
 
+Install and start Ollama on macOS, then download the local model:
+
+```bash
+brew install ollama
+brew services start ollama
+ollama pull llama3.2
+```
+
 The project uses Pydantic v2, Biopython, Requests, pandas, and NumPy. The
-`agents` extra installs LangGraph for the later orchestration phase. Keep API
-credentials in environment variables; never commit tokens or `.env` files.
+`agents` extra installs LangGraph. The graph has deterministic built-in
+policies and can use four structured-output runners backed by local Ollama.
+Keep API credentials in environment variables; never commit tokens or `.env`
+files.
 
 ## Dataset feature identifiers
 
@@ -115,6 +125,47 @@ python examples/resolve_golub_context.py --limit 5
 - Track C receives `FeatureSelectionConfig` and `AgentDebateDecision` schemas.
 - `AgentState` carries metadata, identifiers, validated proposals, and errors;
   it does not include expression values.
+
+## Four-agent LangGraph workflow
+
+The graph runs Planner → Bio-Refiner → Challenger → Judge. Pydantic V2 validates
+the input and every structured agent result. Invalid runner results are retried
+up to `max_agent_retries`; Judge revision requests loop through the agents up to
+`max_revision_rounds`, after which a low-confidence deterministic decision is
+returned. Built-in policies let the graph run before an LLM is configured.
+Supply role-specific callables through `AgentRunners` to connect a model
+provider:
+
+```python
+from agentfs.agent_graph import build_agent_graph
+
+graph = build_agent_graph()  # Uses deterministic policies until LLM runners are supplied.
+result = graph.invoke({
+    "dataset_id": "golub-hu6800",
+    "metadata_profile": {"n_features": 7129},
+    "probe_ids": [],
+    "gene_contexts": [],
+    "max_agent_retries": 2,
+    "max_revision_rounds": 2,
+})
+print(result["status"], result.get("final_decision"))
+```
+
+Each callable receives JSON-friendly metadata and returns a mapping or Pydantic
+model matching its role output schema. The provided Ollama runner sends each
+role's Pydantic JSON schema to the local `/api/chat` endpoint and validates the
+response again before the graph accepts it. Its context excludes expression
+values and sample-level labels; aggregate profile metadata may include class
+counts. Run the bounded Golub workflow with:
+
+```bash
+python examples/run_local_agent_graph.py
+```
+
+Set `OLLAMA_MODEL` or `OLLAMA_HOST` to override the defaults (`llama3.2` and
+`http://127.0.0.1:11434`). Provider or schema failures trigger bounded retries
+and deterministic fallback behavior. This debate selects a research
+configuration; it does not train a classifier or make a diagnosis.
 
 See [`docs/track_b_month1.md`](docs/track_b_month1.md) for the Month 1 contract
 and completion checklist.

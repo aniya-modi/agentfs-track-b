@@ -53,6 +53,11 @@ analysis path.
        |                                       v                        |
        |                 Validated schemas + typed AgentState           |
        |                                       |                        |
+       | Planner -> Bio-Refiner -> Challenger -> Judge                   |
+       |        ^                         |         |                    |
+       |        +---- bounded revision ---+         v                    |
+       |                              fallback / decision                |
+       |                                       |                        |
        |                               Track A / Track C handoff         |
        +----------------------------------------------------------------+
 ```
@@ -265,6 +270,32 @@ visible source version.
    labels for an exploratory report, not held-out evaluation. Set `NCBI_EMAIL`
    for live NCBI requests.
 
+### 9. Four-agent decision graph
+
+1. Validate the graph input with `AgentGraphInput`; Pydantic V2 rejects extra
+   fields and validates nested probe contexts and selector configurations.
+2. Planner proposes configurations from the available tool catalog.
+3. Bio-Refiner grounds proposal rationales in the supplied probe/pathway
+   context and aggregate dataset profile.
+4. Challenger flags unavailable tools or invalid feature-count requests.
+5. Judge accepts a validated `AgentDebateDecision` or returns feedback to the
+   Planner for another round.
+6. Invalid structured agent output receives bounded retries. If retries are
+   exhausted, the role uses a deterministic fallback. If Judge review rounds
+   are exhausted, the graph returns a low-confidence fallback decision.
+
+`build_agent_graph` accepts four optional structured-output callables. The
+built-in deterministic policies make the graph runnable without a local LLM.
+`src/agentfs/ollama_runners.py` supplies four schema-constrained Ollama runners;
+`examples/run_local_agent_graph.py` loads Golub and invokes the graph using
+Llama 3.2. Graph inputs exclude expression values and sample-level labels;
+aggregate metadata such as class counts may be included in the profile. Ollama
+is installed and started as a Homebrew service on the development Mac. The
+`llama3.2` model pull stopped at 81 MB because only about 182 MB of disk space
+was free; the download and model-backed graph run are pending more space. The
+runner targets `http://127.0.0.1:11434` by default and supports `OLLAMA_HOST`
+and `OLLAMA_MODEL` overrides.
+
 ## Proposed next implementation flow
 
 The nonlinear comparison has run, but its source/output reconciliation and
@@ -291,7 +322,10 @@ matching rerun remain pending; other experiments are still planned:
 | `src/agentfs/metadata_profiler.py` | Produce privacy-conscious dataset quality metadata |
 | `src/agentfs/bio_rag.py` | Resolve platform probes and retrieve NCBI/KEGG context |
 | `src/agentfs/schemas.py` | Validate structured configs and biological context records |
-| `src/agentfs/agent_state.py` | Define typed state for later agent orchestration |
+| `src/agentfs/agent_state.py` | Typed metadata-only state for the agent graph |
+| `src/agentfs/agent_graph.py` | Four-role LangGraph, Pydantic output validation, and bounded fallbacks |
+| `src/agentfs/ollama_runners.py` | Four schema-constrained local Ollama runners |
+| `examples/run_local_agent_graph.py` | Invoke the four-role workflow on Golub metadata with local Llama 3.2 |
 | `src/agentfs/hypergraph_experiments.py` | Fold-local pathway and redundancy experiment components |
 | `src/agentfs/baseline_selectors.py` | Fold-local mRMR and L1 logistic feature selectors |
 | `src/agentfs/evaluation.py` | Repeated nested-CV metrics and feature stability |

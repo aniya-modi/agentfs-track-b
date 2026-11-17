@@ -336,6 +336,39 @@ below are exploratory and apply to the stated dataset and validation setup.
 - **Status:** Implemented in the two Month 2 examples. No live API request or
   output report was generated during implementation.
 
+## Four-agent orchestration (2026-11-17)
+
+### Build a validated Planner, Bio-Refiner, Challenger, and Judge graph
+
+- **Decision:** Use LangGraph to coordinate four separate roles in sequence:
+  Planner proposes selector configurations, Bio-Refiner considers supplied
+  gene/pathway context, Challenger checks tool availability and configuration
+  limits, and Judge accepts a decision or requests revision.
+- **Why:** Role separation makes proposals, biological review, criticism, and
+  final selection traceable. Pydantic V2 output models prevent malformed
+  configurations from silently entering the handoff.
+- **Fallback policy:** Retry invalid agent outputs up to the input's
+  `max_agent_retries`. Judge revision requests loop through the graph up to
+  `max_revision_rounds`; after that, choose an available validated proposal
+  with low confidence and mark the result as a fallback.
+- **Data boundary:** Agent state and runner context carry dataset metadata,
+  probe identifiers, and supplied Bio-RAG records; they do not contain
+  expression values or sample-level labels.
+- **Status:** The graph and model integration are implemented in
+  `src/agentfs/agent_graph.py`, `src/agentfs/agent_state.py`,
+  `src/agentfs/schemas.py`, and `src/agentfs/ollama_runners.py`.
+  `examples/run_local_agent_graph.py` invokes the workflow on aggregate Golub
+  metadata. The Ollama service is installed and started, but Llama 3.2 is not
+  yet downloaded: the pull stopped at 81 MB when the Mac had only about 182 MB
+  of free storage. The live model-backed result remains pending. No pytest
+  suite was run.
+- **Ollama setup:** On this macOS machine, installed Ollama with Homebrew and
+  started its background service. Pulling the `llama3.2` model is pending
+  additional disk space. The runner uses
+  Ollama's local chat endpoint with each role's Pydantic JSON schema, then
+  validates the response again in the graph. No NCBI credentials or live
+  NCBI/KEGG requests are needed for this local graph run.
+
 ## Decided but not implemented
 
 The following are accepted as **future experiments to investigate**, based on
