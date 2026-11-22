@@ -1,0 +1,192 @@
+{
+  "generated_at": "2026-11-22T06:21:24.817797+00:00",
+  "purpose": "descriptive pathway validation of a selected gene subset",
+  "dataset": {
+    "id": "golub-hu6800",
+    "n_samples": 72,
+    "n_probes": 7129,
+    "positive_class": "AML"
+  },
+  "selection": {
+    "method": "mrmr",
+    "top_k": 50,
+    "uses_full_dataset_labels": true,
+    "n_selected_probes": 50,
+    "n_selected_symbols": 55,
+    "selected_symbols": [
+      "IL18",
+      "SPTAN1",
+      "LAMP2",
+      "FTL",
+      "LYN",
+      "MPO",
+      "CTSA",
+      "CD33",
+      "CST3",
+      "FAH",
+      "ATP6V0C",
+      "CTSD",
+      "CFD",
+      "CYTH1",
+      "CCND3",
+      "AZU1",
+      "ZNF22",
+      "CD79A",
+      "ALDH3B1",
+      "PTH2R",
+      "MGST1",
+      "LTC4S",
+      "MIR196B",
+      "HOXA9",
+      "SRGN",
+      "SPI1",
+      "KIAA0391",
+      "PSMA6",
+      "RHOG",
+      "CD63",
+      "CHRFAM7A",
+      "ZYX",
+      "NME4",
+      "NUP88",
+      "TPM1",
+      "MYB",
+      "TIMP2",
+      "APLP2",
+      "SERPING1",
+      "LOC100506248",
+      "MIR1244-2",
+      "MIR1244-3",
+      "MIR1244-1",
+      "LOC728026",
+      "PTMA",
+      "CXCL8",
+      "CD19",
+      "TPSB2",
+      "TPSAB1",
+      "MYL6B",
+      "TCF3",
+      "CFP",
+      "STOM",
+      "LYZ",
+      "RNASE2"
+    ]
+  },
+  "ranking": {
+    "method": "signed_cohens_d",
+    "positive_direction": "higher_in_AML",
+    "n_ranked_symbols": 6069
+  },
+  "gene_sets": {
+    "library": "KEGG_2021_Human",
+    "n_sets": 320,
+    "min_set_size": 5,
+    "max_set_size": 531,
+    "min_size_used": 15,
+    "max_size_used": 500
+  },
+  "prerank": {
+    "n_tested": 281,
+    "n_significant": 65,
+    "fdr_threshold": 0.05,
+    "top_terms": [
+      {
+        "term": "Lysosome",
+        "nes": 2.6316633445119355,
+        "nominal_p": 0.0,
+        "fdr": 0.0,
+        "direction": "up_in_positive_class",
+        "lead_genes": "CTSA;CTSD;ATP6V0C;CD63;LAMP2;MAN2B1;ASAH1;NPC2;TCIRG1;GAA;CTSC;GM2A;ATP6V0B;PPT1;CTSG;GLB1;GNS;PSAP;ARSA;LITAF;ATP6AP1;CTSH;HEXA;CTSS;GUSB;SLC11A1;IDS;GLA;LAMP1;CTSL;M6PR;IDUA;NAGA"
+      },
+      {
+        "term": "Spliceosome",
+        "nes": -2.4343615645938574,
+        "nominal_p": 0.0,
+        "fdr": 0.0,
+        "direction": "down_in_positive_class",
+        "lead_genes": "PRPF18;SRSF3;CHERP;TRA2B;SNRPD1;SRSF2;SRSF6;RBMX;SNRPF;HNRNPM;SNRPE;SNRPD3;RBMXL1;NCBP2;PUF60;SRSF7;SF3B3;SNRPB2;SNRPA;SNRPG;DDX5;HNRNPU;SRSF9;HNRNPA1;HNRNPA1L2;TRA2A;SNRPB;SNRNP27;SNRPC;U2AF1;SNRPD2;ZMAT2;SNRPA1;THOC1"
+      },
+      {
+        "term": "Rheumatoid arthritis",
+        "nes": 2.410517146761835,
+        "nominal_p": 0.0,
+        "fdr": 0.0,
+        "direction": "up_in_positive_class",
+        "lead_genes": "ATP6V0C;IL18;ITGB2;CXCL8;CSF1;TGFB1;ATP6V1F;TCIRG1;CD86;CXCL2;ICAM1;ATP6V0B;ATP6AP1;ATP6V1B2;CCL5;CXCL3;VEGFA;IGH;ATP6V1A;ANGPT1;CCL2;CXCL1;CTSL;CCL3L3;CCL3L1;CCL3;ATP6V1B1;ITGAL;IL1B;CTLA4;IL6"
+      },
+      {
+        "term": "Legionellosis",
+        "nes": 2.3666703450255397,
+        "nominal_p": 0.0,
+        "fdr": 0.0,
+        "direction": "up_in_positive_class",
+        "lead_genes": "IL18;ITGB2;CXCL8;NFKB2;ITGAM;CXCL2;NFKBIA;NFKB1;RAB1A;CXCL3;CD14;ARF1;CASP1;HSPA2;CXCL1;NAIP;IL1B;IL6;CASP8;TLR4;RELA"
+      },
+      {
+        "term": "Cell cycle",
+        "nes": -2.358430503419335,
+        "nominal_p": 0.0,
+        "fdr": 0.0,
+        "direction": "down_in_positive_class",
+        "lead_genes": "CCND3;MAD1L1;MCM3;YWHAQ;RB1;YWHAZ;TP53;MCM2;RBL2;PCNA;CDC6;RAD21;CDC7;MCM6;PRKDC;HDAC2;CDC20;SMC1A;MYC;MCM7;CUL1;E2F5;SMAD4;WEE1;E2F4;SMAD2;HDAC1;CDKN2A;CDC25B;ATR;CDKN2D;CDK2;ATM;TTK;MAD2L1;CDC27;CDK4;CCNA2;YWHAH;YWHAE;ORC3;ESPL1;CDK1;CREBBP;MCM5;ORC2"
+      },
+      {
+        "term": "DNA replication",
+        "nes": -2.2771752852685894,
+        "nominal_p": 0.0,
+        "fdr": 0.0,
+        "direction": "down_in_positive_class",
+        "lead_genes": "RPA1;MCM3;POLD2;MCM2;POLD3;PCNA;MCM6;POLA1;MCM7;PRIM2;RFC4;RFC1;PRIM1;RPA3;LIG1;RFC5;SSBP1;MCM5"
+      },
+      {
+        "term": "Phagosome",
+        "nes": 2.27397515053158,
+        "nominal_p": 0.0,
+        "fdr": 0.0,
+        "direction": "up_in_positive_class",
+        "lead_genes": "ATP6V0C;MPO;ITGB2;LAMP2;CD36;FCGR1A;ATP6V1F;TCIRG1;ITGAM;ATP6V0B;FCGR2B;THBS1;ATP6AP1;ATP6V1B2;CALR;IGH;CD14;TFRC;CTSS;CYBA;ATP6V1A;FCGR2A;NCF2;LAMP1;CTSL;ITGAV;M6PR;ATP6V1B1;COMP;TUBB3;ACTB;THBS4;C1R;FCAR;TUBA3E;TUBA3D;TUBA3C;TLR4;NOS1;ATP6V0A1;SFTPA2;SFTPA1;RAB7A;ITGA5;HLA-G;HLA-DRB5;FCGR3B"
+      },
+      {
+        "term": "Proteasome",
+        "nes": -2.2460443578138753,
+        "nominal_p": 0.0,
+        "fdr": 0.0,
+        "direction": "down_in_positive_class",
+        "lead_genes": "PSMA6;PSMB9;PSME1;PSMB8;PSMC5;PSMD14;PSMD4;PSMD7;PSME2;PSMA4;PSMA2;PSMA5;PSMB4;PSMF1;PSMC6;PSMD1;PSMB7;PSMB10;PSMB3;PSMB6;PSMA1;PSMB2;PSMD12"
+      },
+      {
+        "term": "Porphyrin and chlorophyll metabolism",
+        "nes": 2.2081083330978752,
+        "nominal_p": 0.0,
+        "fdr": 0.00021923676852191287,
+        "direction": "up_in_positive_class",
+        "lead_genes": "HMOX1;ALAS1;BLVRA;UROD;BLVRB;GUSB;ALAD;HMOX2;HMBS;UGT2B7;FECH"
+      },
+      {
+        "term": "Epithelial cell signaling in Helicobacter pylori infection",
+        "nes": 2.219054998468274,
+        "nominal_p": 0.0,
+        "fdr": 0.00026308412222629545,
+        "direction": "up_in_positive_class",
+        "lead_genes": "LYN;ATP6V0C;CXCL8;ATP6V1F;TCIRG1;CXCL2;NFKBIA;ATP6V0B;NFKB1;ATP6AP1;ATP6V1B2;CCL5;CXCL3;ATP6V1A;CXCL1;MAPK12;ATP6V1B1"
+      }
+    ],
+    "permutations": 1000,
+    "seed": 42
+  },
+  "ora": {
+    "n_tested": 113,
+    "n_significant": 0,
+    "fdr_threshold": 0.05,
+    "top_terms": []
+  },
+  "packages": {
+    "gseapy": "1.3.2"
+  },
+  "caveats": [
+    "Selection uses all samples, so this is descriptive validation, not held-out evaluation.",
+    "Prerank p-values come from gene-set permutations on one cohort; treat them as exploratory.",
+    "Multi-symbol probes contribute every annotated symbol; unmapped probes are dropped.",
+    "ORA and preranked GSEA use different null hypotheses and answer different questions.",
+    "Enrichment does not establish clinical or diagnostic value."
+  ]
+}

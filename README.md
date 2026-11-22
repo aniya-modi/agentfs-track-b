@@ -118,6 +118,26 @@ export NCBI_EMAIL="your-email@example.com"
 python examples/resolve_golub_context.py --limit 5
 ```
 
+## GSEA validation (Month 5)
+
+`agentfs.gsea` wraps `gseapy` to validate a selected gene subset with
+preranked GSEA and over-representation analysis (ORA). The example selects genes
+with F-score, mRMR, or L1 logistic selection on Golub, maps probes through the
+GPL80 annotation, and tests them against an Enrichr library (cached as a GMT on
+first use):
+
+```bash
+python -m pip install -e ".[analysis]"
+python examples/run_gsea_validation.py --selector mrmr --top-k 50
+```
+
+It writes `month5_gsea_validation.json`, `month5_gsea_prerank.csv`, and
+`month5_gsea_ora.csv` under `data/results/`. Selection and ranking use the full
+cohort, so these are descriptive enrichment results, not held-out or clinical
+validation. Gene-set cache files live in `data/reference/gene_sets/`. See
+[`docs/month5_gsea.md`](docs/month5_gsea.md) for the recorded run and
+limitations.
+
 ## Track handoff contracts
 
 - Track A receives `metadata_profiler.profile_dataset(...)` output and a list of
