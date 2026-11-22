@@ -8,8 +8,8 @@ through the project. Proposed future experiments are marked separately.
 The architecture has two related paths: a **data and prediction path** for
 local expression analysis, and a **metadata/biological-context path** for
 annotation and downstream agent handoffs. The paths meet through feature IDs
-and pathway context; expression values and patient labels stay in the local
-analysis path.
+and pathway context; expression values and sample labels stay in local Python
+selector tools.
 
 ```text
                          RESEARCHER / NOTEBOOK
@@ -35,13 +35,15 @@ analysis path.
        |                     |                                          |
        |       +-------------+--------------+                           |
        |                     v                                          |
+       |       Planner proposals -> local selector executor             |
+       |                     |                                          |
        |       Fold-local nested/repeated CV                            |
        |                     |                                          |
        |                     v                                          |
        |       Metrics + selected genes/pathways                        |
        +----------------------------------------------------------------+
                                   |
-                    probe IDs / aggregate metadata only
+                    selected IDs / aggregate metrics only
                                   v
        +---------- BIOLOGICAL CONTEXT AND AGENT CONTRACT PATH -----------+
        | Matching platform annotation (e.g., GPL80)                     |
@@ -53,7 +55,7 @@ analysis path.
        |                                       v                        |
        |                 Validated schemas + typed AgentState           |
        |                                       |                        |
-       | Planner -> Bio-Refiner -> Challenger -> Judge                   |
+       | Bio-Refiner -> Challenger -> Judge                              |
        |        ^                         |         |                    |
        |        +---- bounded revision ---+         v                    |
        |                              fallback / decision                |
@@ -62,10 +64,10 @@ analysis path.
        +----------------------------------------------------------------+
 ```
 
-**Privacy/data boundary:** Bio-RAG receives mapped biological identifiers for
-lookup, not expression matrices or sample labels. The profiler produces
-aggregate metadata. Agent schemas carry metadata, identifiers, decisions, and
-errors rather than expression arrays.
+**Privacy/data boundary:** The local selector executor receives expression
+matrices and labels. Ollama receives only aggregate metadata, candidate feature
+IDs, CV summaries, and bounded Bio-RAG records. Bio-RAG receives mapped
+biological identifiers, not expression values or sample labels.
 
 ## Current end-to-end data flow
 
@@ -83,17 +85,20 @@ Preprocessing and stable feature IDs
         |      Bio-RAG NCBI/KEGG context lookup
         |
         v
-Training-only feature selection and scaling inside CV
-        |
-        +--> baseline: statistical gene ranking + regularized logistic regression
-        |
-        +--> pathway/hypergraph experiments
+Planner proposes selector configurations
         |
         v
-Nested/repeated cross-validation comparison
+Local Python executes mRMR, LASSO, and optional KEGG hypergraph candidates in nested CV
+        |
+        +--> fit exploratory final feature lists locally
+        |
+        +--> resolve a bounded set of selected IDs through Bio-RAG
         |
         v
-Report prediction metrics, selected genes, pathway context, and limitations
+Bio-Refiner reviews pathway records -> Challenger checks measured evidence -> Judge chooses an executed candidate
+        |
+        v
+Print selected features, CV summaries, pathway support, and limitations
 ```
 
 ## Implemented stages
@@ -257,6 +262,8 @@ visible source version.
 2. Build a probe-by-KEGG-pathway incidence matrix using the matching GPL80
    annotation. The first API responses are cached under
    `data/reference/kegg_snapshot/`; their hashes are printed for provenance.
+   For four-column KEGG gene-list rows, use the fourth names field to map
+   symbols; retain the two-column fallback for older response formats.
 3. Compare an F-score baseline, mRMR, L1 logistic selection, and the existing
    biological/statistical soft-redundancy selector. Imputation, selector
    fitting, scaling, and logistic tuning run inside nested CV folds.
@@ -272,29 +279,37 @@ visible source version.
 
 ### 9. Four-agent decision graph
 
-1. Validate the graph input with `AgentGraphInput`; Pydantic V2 rejects extra
-   fields and validates nested probe contexts and selector configurations.
-2. Planner proposes configurations from the available tool catalog.
-3. Bio-Refiner grounds proposal rationales in the supplied probe/pathway
-   context and aggregate dataset profile.
-4. Challenger flags unavailable tools or invalid feature-count requests.
-5. Judge accepts a validated `AgentDebateDecision` or returns feedback to the
-   Planner for another round.
-6. Invalid structured agent output receives bounded retries. If retries are
-   exhausted, the role uses a deterministic fallback. If Judge review rounds
-   are exhausted, the graph returns a low-confidence fallback decision.
+1. Validate input with `AgentGraphInput`; the expression matrix and labels stay
+   in a local executor closure, outside `AgentState` and model prompts.
+2. Planner proposes configurations from the available selector catalog.
+3. Local Python selector tools execute each proposal inside nested CV and fit
+   a final exploratory feature list on the full supplied input. Only selected
+   feature IDs and aggregate metrics enter graph state.
+4. A bounded Bio-RAG resolver maps selected IDs through the matching platform
+   annotation and retrieves NCBI/KEGG context when `NCBI_EMAIL` and annotation
+   are available.
+5. Bio-Refiner reviews actual resolved gene/pathway records; the graph filters
+   claimed pathway-supported IDs against those records.
+6. Challenger reviews measured performance, stability, redundancy, and pathway
+   coverage. Judge chooses among candidates that were actually executed and
+   returns that candidate's selected feature IDs.
+7. Invalid agent responses receive bounded retries. Selector or Bio-RAG errors
+   are surfaced without sending the matrix to Ollama. If every selector
+   candidate fails, the graph marks the result as fallback and returns no
+   feature list or CV metrics instead of implying selection succeeded.
 
 `build_agent_graph` accepts four optional structured-output callables. The
 built-in deterministic policies make the graph runnable without a local LLM.
 `src/agentfs/ollama_runners.py` supplies four schema-constrained Ollama runners;
-`examples/run_local_agent_graph.py` loads Golub and invokes the graph using
-Llama 3.2. Graph inputs exclude expression values and sample-level labels;
-aggregate metadata such as class counts may be included in the profile. Ollama
-is installed and started as a Homebrew service on the development Mac. The
-`llama3.2` model pull stopped at 81 MB because only about 182 MB of disk space
-was free; the download and model-backed graph run are pending more space. The
-runner targets `http://127.0.0.1:11434` by default and supports `OLLAMA_HOST`
-and `OLLAMA_MODEL` overrides.
+`src/agentfs/selection_pipeline.py` keeps data local while evaluating and
+fitting selector candidates. `examples/run_local_agent_graph.py` supports
+Golub and other labeled numeric CSVs, optional platform-matched annotations,
+and bounded Bio-RAG lookups. It prints all role/tool outputs and the final
+selected feature IDs. Its candidate CV scores help choose a method, so the
+winning score is exploratory rather than an unbiased final estimate; use a
+separate outer evaluation for final performance claims. Ollama uses
+`http://127.0.0.1:11434` by default and supports `OLLAMA_HOST` and `OLLAMA_MODEL`
+overrides.
 
 ## Proposed next implementation flow
 
@@ -325,7 +340,8 @@ matching rerun remain pending; other experiments are still planned:
 | `src/agentfs/agent_state.py` | Typed metadata-only state for the agent graph |
 | `src/agentfs/agent_graph.py` | Four-role LangGraph, Pydantic output validation, and bounded fallbacks |
 | `src/agentfs/ollama_runners.py` | Four schema-constrained local Ollama runners |
-| `examples/run_local_agent_graph.py` | Invoke the four-role workflow on Golub metadata with local Llama 3.2 |
+| `src/agentfs/selection_pipeline.py` | Local selector execution and nested-CV candidate evidence |
+| `examples/run_local_agent_graph.py` | Labeled numeric CSV demo with local selectors, optional Bio-RAG, and Ollama agents |
 | `src/agentfs/hypergraph_experiments.py` | Fold-local pathway and redundancy experiment components |
 | `src/agentfs/baseline_selectors.py` | Fold-local mRMR and L1 logistic feature selectors |
 | `src/agentfs/evaluation.py` | Repeated nested-CV metrics and feature stability |

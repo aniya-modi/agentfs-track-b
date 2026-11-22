@@ -340,34 +340,59 @@ below are exploratory and apply to the stated dataset and validation setup.
 
 ### Build a validated Planner, Bio-Refiner, Challenger, and Judge graph
 
-- **Decision:** Use LangGraph to coordinate four separate roles in sequence:
-  Planner proposes selector configurations, Bio-Refiner considers supplied
-  gene/pathway context, Challenger checks tool availability and configuration
-  limits, and Judge accepts a decision or requests revision.
+- **Decision:** Use LangGraph to coordinate four roles around local selector
+  tools: Planner proposes selector configurations, Bio-Refiner reviews the
+  executed feature candidates with supplied gene/pathway context, Challenger
+  examines measured validation and stability evidence, and Judge chooses among
+  executed candidates or requests revision.
 - **Why:** Role separation makes proposals, biological review, criticism, and
   final selection traceable. Pydantic V2 output models prevent malformed
   configurations from silently entering the handoff.
 - **Fallback policy:** Retry invalid agent outputs up to the input's
   `max_agent_retries`. Judge revision requests loop through the graph up to
-  `max_revision_rounds`; after that, choose an available validated proposal
-  with low confidence and mark the result as a fallback.
+  `max_revision_rounds`; after that, select the best executed candidate by
+  nested-CV balanced accuracy, macro-F1, stability, and pathway coverage, and
+  mark the result as a fallback.
 - **Data boundary:** Agent state and runner context carry dataset metadata,
-  probe identifiers, and supplied Bio-RAG records; they do not contain
-  expression values or sample-level labels.
-- **Status:** The graph and model integration are implemented in
-  `src/agentfs/agent_graph.py`, `src/agentfs/agent_state.py`,
-  `src/agentfs/schemas.py`, and `src/agentfs/ollama_runners.py`.
-  `examples/run_local_agent_graph.py` invokes the workflow on aggregate Golub
-  metadata. The Ollama service is installed and started, but Llama 3.2 is not
-  yet downloaded: the pull stopped at 81 MB when the Mac had only about 182 MB
-  of free storage. The live model-backed result remains pending. No pytest
-  suite was run.
-- **Ollama setup:** On this macOS machine, installed Ollama with Homebrew and
-  started its background service. Pulling the `llama3.2` model is pending
-  additional disk space. The runner uses
-  Ollama's local chat endpoint with each role's Pydantic JSON schema, then
-  validates the response again in the graph. No NCBI credentials or live
-  NCBI/KEGG requests are needed for this local graph run.
+  candidate feature IDs, measured summaries, and supplied Bio-RAG records.
+  Expression values and sample-level labels stay in the local selector
+  executor closure and never enter model context.
+- **Status:** Implemented across `agent_graph.py`, `agent_state.py`,
+  `schemas.py`, `ollama_runners.py`, and `selection_pipeline.py`. The demo now
+  executes candidate selectors inside nested CV, fits final exploratory
+  feature lists locally, resolves a bounded set of selected IDs through
+  optional Bio-RAG, and prints all agent/tool outputs. This integrated path has
+  not yet been run end-to-end after the change.
+- **Ollama setup:** Ollama was installed with Homebrew and its `llama3.2` model
+  was pulled successfully. The runner uses Ollama's local chat endpoint with
+  each role's Pydantic JSON schema and validates responses again in the graph.
+  Live Bio-RAG requires a platform annotation and `NCBI_EMAIL`.
+- **Demo visibility:** Print each validated role output in the example so the
+  audience can inspect each handoff, rather than only seeing the Judge's final
+  decision. This makes the agent workflow auditable and helps distinguish
+  measured feature selection from a medical diagnosis.
+- **Execution failure behavior:** If a local executor was configured but no
+  candidate completed, return a zero-confidence fallback with no selected IDs
+  or CV metrics. Do not label a configuration-only recommendation as completed
+  feature selection.
+
+### Generalize the project around supervised numeric feature selection
+
+- **Decision:** Accept labeled numeric tabular CSV inputs with any number of
+  classes. Keep microarray platform annotations optional; enable KEGG
+  hypergraph selection only when the user supplies a matching annotation.
+- **Why:** This makes the selector workflow reusable beyond one cancer dataset
+  without claiming that the current code supports every medical modality.
+- **Data flow:** The local Python executor owns the feature matrix and target.
+  LLM agents receive feature identifiers, compact nested-CV results, and
+  bounded biological contexts only.
+- **Evaluation boundary:** The Judge uses candidate CV summaries to select a
+  method, so the winning candidate score is for agent review and is not a
+  separate unbiased estimate. A separate outer evaluation is required for
+  final performance claims.
+- **Status:** Generic numeric CSV arguments and optional annotation support
+  are implemented in the demo. Categorical encoders, images, clinical text,
+  unsupervised selection, and external-cohort evaluation remain future work.
 
 ## Decided but not implemented
 
@@ -404,3 +429,18 @@ When adding a decision, record its date, status (`decided; not implemented`,
 `implemented`, `deferred`, or `rejected`), rationale, and evidence. Link to the
 code/notebook and state the validation setup for any reported score. Keep
 exploratory and external-test results distinct.
+
+### Parse current KEGG gene-list records by their names field
+
+- **Decision:** When a KEGG `list/{organism}` row has four tab-separated
+  fields, parse the gene symbols from the fourth (names) field; retain the
+  two-column fallback for older or alternate cached responses.
+- **Why:** Treating the second field as the description read the gene type or
+  genomic position as a symbol and severely undercounted probe-to-pathway
+  memberships.
+- **Evidence:** The recorded Golub mapping changed from 473 to 4,555 covered
+  probes when rebuilt from the November 2026 KEGG snapshot. This supports the
+  parser correction; it does not imply improved predictive accuracy.
+- **Status:** Implemented in `src/agentfs/kegg.py`. The large KEGG snapshots
+  and generated benchmark/report artifacts from the source commit are kept
+  local and excluded from the new implementation commit.
