@@ -1,0 +1,108 @@
+[
+  {
+    "probe_id": "X95735_at",
+    "platform": "GPL80",
+    "organism": "Homo sapiens",
+    "status": "resolved",
+    "gene_symbols": [
+      "ZYX"
+    ],
+    "candidate_gene_ids": [],
+    "candidate_gene_symbols": [],
+    "gene_symbol": "ZYX",
+    "ncbi_gene_id": "7791",
+    "gene_summary": "Focal adhesions are actin-rich structures that enable cells to adhere to the extracellular matrix and at which protein complexes involved in signal transduction assemble. Zyxin is a zinc-binding phosphoprotein that concentrates at focal adhesions and along the actin cytoskeleton. Zyxin has an N-terminal proline-rich domain and three LIM domains in its C-terminal half. The proline-rich domain may interact with SH3 domains of proteins involved in signal transduction pathways while the LIM domains are likely involved in protein-protein binding. Zyxin may function as a messenger in the signal transduction pathway that mediates adhesion-stimulated changes in gene expression and may modulate the cytoskeletal organization of actin bundles. Alternative splicing results in multiple transcript variants that encode the same isoform. [provided by RefSeq, Jul 2008]",
+    "kegg_gene_id": "hsa:7791",
+    "pathways": [
+      {
+        "pathway_id": "hsa04510",
+        "name": "Focal adhesion - Homo sapiens (human)",
+        "source": "KEGG"
+      },
+      {
+        "pathway_id": "hsa04820",
+        "name": "Cytoskeleton in muscle cells - Homo sapiens (human)",
+        "source": "KEGG"
+      }
+    ],
+    "sources": [
+      "NCBI GEO GPL80.annot.gz (Hu6800; annotation build 35, 2016-08-09)",
+      "NCBI Gene E-utilities",
+      "KEGG REST API"
+    ],
+    "retrieved_at": "2026-11-22T06:36:47.196919Z",
+    "detail": null
+  },
+  {
+    "probe_id": "M85169_at",
+    "platform": "GPL80",
+    "organism": "Homo sapiens",
+    "status": "resolved",
+    "gene_symbols": [
+      "CYTH1"
+    ],
+    "candidate_gene_ids": [],
+    "candidate_gene_symbols": [],
+    "gene_symbol": "CYTH1",
+    "ncbi_gene_id": "9267",
+    "gene_summary": "The protein encoded by this gene is a member of the PSCD family. Members of this family have identical structural organization that consists of an N-terminal coiled-coil motif, a central Sec7 domain, and a C-terminal pleckstrin homology (PH) domain. The coiled-coil motif is involved in homodimerization, the Sec7 domain contains guanine-nucleotide exchange protein activity, and the PH domain interacts with phospholipids and is responsible for association of PSCDs with membranes. Members of this family appear to mediate the regulation of protein sorting and membrane trafficking. This gene is highly expressed in natural killer and peripheral T cells, and regulates the adhesiveness of integrins at the plasma membrane of lymphocytes. A pseudogene of this gene has been defined on the X chromosome. Alternative splicing results in multiple transcript variants. [provided by RefSeq, May 2014]",
+    "kegg_gene_id": "hsa:9267",
+    "pathways": [
+      {
+        "pathway_id": "hsa04072",
+        "name": "Phospholipase D signaling pathway - Homo sapiens (human)",
+        "source": "KEGG"
+      },
+      {
+        "pathway_id": "hsa04144",
+        "name": "Endocytosis - Homo sapiens (human)",
+        "source": "KEGG"
+      },
+      {
+        "pathway_id": "hsa05130",
+        "name": "Pathogenic Escherichia coli infection - Homo sapiens (human)",
+        "source": "KEGG"
+      },
+      {
+        "pathway_id": "hsa05131",
+        "name": "Shigellosis - Homo sapiens (human)",
+        "source": "KEGG"
+      },
+      {
+        "pathway_id": "hsa05132",
+        "name": "Salmonella infection - Homo sapiens (human)",
+        "source": "KEGG"
+      }
+    ],
+    "sources": [
+      "NCBI GEO GPL80.annot.gz (Hu6800; annotation build 35, 2016-08-09)",
+      "NCBI Gene E-utilities",
+      "KEGG REST API"
+    ],
+    "retrieved_at": "2026-11-22T06:36:52.049023Z",
+    "detail": null
+  },
+  {
+    "probe_id": "X17042_at",
+    "platform": "GPL80",
+    "organism": "Homo sapiens",
+    "status": "resolved",
+    "gene_symbols": [
+      "SRGN"
+    ],
+    "candidate_gene_ids": [],
+    "candidate_gene_symbols": [],
+    "gene_symbol": "SRGN",
+    "ncbi_gene_id": "5552",
+    "gene_summary": "This gene encodes a protein best known as a hematopoietic cell granule proteoglycan. Proteoglycans stored in the secretory granules of many hematopoietic cells also contain a protease-resistant peptide core, which may be important for neutralizing hydrolytic enzymes. This encoded protein was found to be associated with the macromolecular complex of granzymes and perforin, which may serve as a mediator of granule-mediated apoptosis. Two transcript variants, only one of them protein-coding, have been found for this gene. [provided by RefSeq, Jul 2010]",
+    "kegg_gene_id": "hsa:5552",
+    "pathways": [],
+    "sources": [
+      "NCBI GEO GPL80.annot.gz (Hu6800; annotation build 35, 2016-08-09)",
+      "NCBI Gene E-utilities",
+      "KEGG REST API"
+    ],
+    "retrieved_at": "2026-11-22T06:36:55.680528Z",
+    "detail": null
+  }
+]

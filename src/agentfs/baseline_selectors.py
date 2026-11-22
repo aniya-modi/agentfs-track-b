@@ -63,7 +63,8 @@ class MRMRSelector(BaseEstimator, TransformerMixin):
             best_position = int(np.argmax(scores))
             selected_local.append(remaining.pop(best_position))
 
-        self.support_ = np.sort(candidates[np.asarray(selected_local, dtype=int)])
+        self.ranking_ = candidates[np.asarray(selected_local, dtype=int)].copy()
+        self.support_ = np.sort(self.ranking_)
         self.n_features_in_ = n_features
         return self
 

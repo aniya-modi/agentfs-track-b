@@ -138,6 +138,29 @@ validation. Gene-set cache files live in `data/reference/gene_sets/`. See
 [`docs/month5_gsea.md`](docs/month5_gsea.md) for the recorded run and
 limitations.
 
+## XAI biomarker reports (Month 5)
+
+`agentfs.xai_report` turns retained probes into validated, natural-language
+explanations. It combines Bio-RAG annotation contexts, selector retention
+ranks, signed effect sizes, and optional GSEA terms into a Markdown and JSON
+report where every sentence is tied to a typed reason and a source. Generation
+is deterministic; unresolved mappings withhold gene-level claims instead of
+guessing.
+
+```bash
+export NCBI_EMAIL="your-email@example.com"
+python examples/resolve_golub_context.py --probe X95735_at --probe M85169_at \
+  --probe X17042_at --output data/results/month5_xai_biomarker_contexts.json
+python examples/generate_xai_report.py
+```
+
+It writes `month5_xai_report.md` and `month5_xai_report.json` under
+`data/results/`. Significant enrichment terms are loaded from the full GSEA
+result CSVs at FDR <= 0.05 and direction-checked before being cited. Evidence
+completeness measures field coverage, not statistical significance. See
+[`docs/month5_xai.md`](docs/month5_xai.md) for the recorded run and
+limitations.
+
 ## Track handoff contracts
 
 - Track A receives `metadata_profiler.profile_dataset(...)` output and a list of
