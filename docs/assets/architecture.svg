@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="610" viewBox="0 0 1200 610" role="img" aria-labelledby="title desc">
+  <title id="title">AgentFS project architecture</title>
+  <desc id="desc">Numeric expression data stays in local Python selector tools. Selected feature IDs and summary evidence flow to a local Ollama agent graph. Platform annotation and KEGG provide pathway context.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#52657a"/></marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; fill: #182b40; }
+      .title { font-size: 27px; font-weight: 700; }
+      .subtitle { font-size: 15px; fill: #52657a; }
+      .heading { font-size: 17px; font-weight: 700; }
+      .body { font-size: 14px; }
+      .small { font-size: 12px; fill: #52657a; }
+      .edge { stroke: #52657a; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
+      .edge-dashed { stroke: #52657a; stroke-width: 2.2; stroke-dasharray: 7 6; fill: none; marker-end: url(#arrow); }
+      .local { fill: #eef6ff; stroke: #5a8fc5; stroke-width: 2; }
+      .bio { fill: #f2f8ed; stroke: #7c9d5d; stroke-width: 2; }
+      .agent { fill: #f6f1ff; stroke: #8973b2; stroke-width: 2; }
+      .plain { fill: #ffffff; stroke: #8294a8; stroke-width: 1.6; }
+    </style>
+  </defs>
+  <rect width="1200" height="610" rx="18" fill="#ffffff"/>
+  <text x="38" y="45" class="title">AgentFS architecture</text>
+  <text x="38" y="72" class="subtitle">The expression matrix stays local. Agents receive selected IDs, evaluation summaries, and bounded biological context.</text>
+
+  <rect x="34" y="118" width="190" height="126" rx="13" class="plain"/>
+  <text x="54" y="151" class="heading">Dataset</text>
+  <text x="54" y="178" class="body">Numeric CSV</text>
+  <text x="54" y="200" class="body">Samples + features</text>
+  <text x="54" y="222" class="body">+ target column</text>
+
+  <rect x="262" y="99" width="438" height="365" rx="18" class="local"/>
+  <text x="286" y="132" class="heading">Local Python analysis</text>
+  <text x="286" y="154" class="small">Expression values and sample labels stay inside this boundary.</text>
+
+  <rect x="286" y="184" width="175" height="78" rx="10" class="plain"/>
+  <text x="305" y="214" class="heading">Validate + profile</text>
+  <text x="305" y="239" class="small">Shape, classes, missingness</text>
+
+  <rect x="496" y="184" width="177" height="96" rx="10" class="plain"/>
+  <text x="515" y="214" class="heading">Selector tools</text>
+  <text x="515" y="239" class="body">mRMR · L1 · hypergraph</text>
+  <text x="515" y="261" class="small">Nested cross-validation</text>
+
+  <rect x="496" y="317" width="177" height="92" rx="10" class="plain"/>
+  <text x="515" y="347" class="heading">Candidate evidence</text>
+  <text x="515" y="372" class="body">Selected IDs + metrics</text>
+  <text x="515" y="393" class="small">Stability + pathway support</text>
+
+  <rect x="34" y="325" width="190" height="119" rx="13" class="bio"/>
+  <text x="54" y="357" class="heading">Biology inputs</text>
+  <text x="54" y="383" class="body">Platform annotation</text>
+  <text x="54" y="405" class="body">KEGG pathways</text>
+  <text x="54" y="427" class="small">Probe → gene → pathway</text>
+
+  <rect x="742" y="119" width="190" height="139" rx="13" class="bio"/>
+  <text x="762" y="152" class="heading">Bio-RAG</text>
+  <text x="762" y="180" class="body">NCBI + KEGG lookup</text>
+  <text x="762" y="203" class="body">for mapped IDs</text>
+  <text x="762" y="232" class="small">Optional live requests</text>
+
+  <rect x="972" y="99" width="194" height="365" rx="18" class="agent"/>
+  <text x="994" y="132" class="heading">Local Ollama agents</text>
+  <rect x="994" y="157" width="150" height="49" rx="9" class="plain"/>
+  <text x="1012" y="187" class="body">Planner</text>
+  <rect x="994" y="221" width="150" height="49" rx="9" class="plain"/>
+  <text x="1012" y="251" class="body">Bio-Refiner</text>
+  <rect x="994" y="285" width="150" height="49" rx="9" class="plain"/>
+  <text x="1012" y="315" class="body">Challenger</text>
+  <rect x="994" y="349" width="150" height="49" rx="9" class="plain"/>
+  <text x="1012" y="379" class="body">Judge</text>
+  <text x="994" y="432" class="small">Chooses an executed candidate</text>
+
+  <path d="M224 180 H286" class="edge"/>
+  <path d="M461 223 H496" class="edge"/>
+  <path d="M585 280 V317" class="edge"/>
+  <path d="M224 382 H248 V500 H585 V409" class="edge"/>
+  <text x="275" y="490" class="small">Build pathway incidence matrix for hypergraph selection</text>
+  <path d="M673 350 H710 V205 H742" class="edge-dashed"/>
+  <text x="691" y="334" class="small" transform="rotate(-90 691 334)">Selected IDs only</text>
+  <path d="M932 188 H958 V245 H972" class="edge"/>
+  <path d="M673 365 H954 V315 H972" class="edge-dashed"/>
+  <text x="800" y="354" class="small">Summaries + IDs</text>
+  <path d="M932 225 H965 V244 H994" class="edge"/>
+  <text x="944" y="221" class="small">Context</text>
+
+  <rect x="34" y="533" width="1132" height="43" rx="10" fill="#f5f7fa"/>
+  <line x1="57" y1="554" x2="101" y2="554" stroke="#52657a" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <text x="112" y="559" class="small">Data or context flow</text>
+  <line x1="317" y1="554" x2="361" y2="554" stroke="#52657a" stroke-width="2.2" stroke-dasharray="7 6" marker-end="url(#arrow)"/>
+  <text x="372" y="559" class="small">Bounded identifiers / summaries</text>
+  <text x="680" y="559" class="small">No expression matrix or individual sample labels are sent to Ollama or Bio-RAG.</text>
+</svg>

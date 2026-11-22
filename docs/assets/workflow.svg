@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="470" viewBox="0 0 1320 470" role="img" aria-labelledby="title desc">
+  <title id="title">AgentFS run workflow</title>
+  <desc id="desc">The Planner proposes methods, local Python tools run feature selection and cross-validation, biological context is resolved, then Bio-Refiner, Challenger, and Judge review the evidence and return a selected feature set.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#52657a"/></marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; fill: #182b40; }
+      .title { font-size: 27px; font-weight: 700; }
+      .subtitle { font-size: 15px; fill: #52657a; }
+      .head { font-size: 16px; font-weight: 700; }
+      .body { font-size: 13px; }
+      .small { font-size: 12px; fill: #52657a; }
+      .box { fill: #ffffff; stroke: #8294a8; stroke-width: 1.7; }
+      .local { fill: #eef6ff; stroke: #5a8fc5; stroke-width: 2; }
+      .agent { fill: #f6f1ff; stroke: #8973b2; stroke-width: 2; }
+      .bio { fill: #f2f8ed; stroke: #7c9d5d; stroke-width: 1.7; }
+      .arrow { stroke: #52657a; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
+      .dash { stroke: #52657a; stroke-width: 2.2; stroke-dasharray: 7 6; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1320" height="470" rx="18" fill="#ffffff"/>
+  <text x="36" y="43" class="title">What happens in one run</text>
+  <text x="36" y="69" class="subtitle">Python performs feature selection; agents review the measured results and choose a candidate.</text>
+
+  <rect x="24" y="114" width="538" height="252" rx="17" class="local"/>
+  <text x="45" y="145" class="head">Local data and selection</text>
+  <text x="45" y="167" class="small">Expression values and sample labels remain in Python.</text>
+  <rect x="43" y="200" width="136" height="94" rx="10" class="box"/>
+  <text x="59" y="231" class="head">Dataset</text>
+  <text x="59" y="256" class="body">Numeric features</text>
+  <text x="59" y="276" class="body">+ target column</text>
+  <rect x="217" y="200" width="154" height="94" rx="10" class="box"/>
+  <text x="234" y="231" class="head">Selector tools</text>
+  <text x="234" y="256" class="body">mRMR · L1 ·</text>
+  <text x="234" y="276" class="body">hypergraph</text>
+  <rect x="407" y="200" width="136" height="94" rx="10" class="box"/>
+  <text x="424" y="231" class="head">Results</text>
+  <text x="424" y="256" class="body">CV + selected IDs</text>
+  <text x="424" y="276" class="body">+ stability</text>
+  <path d="M179 247 H217" class="arrow"/>
+  <path d="M371 247 H407" class="arrow"/>
+  <text x="48" y="333" class="small">Planner configurations are executed here; nested CV evaluates each candidate.</text>
+
+  <rect x="586" y="114" width="710" height="252" rx="17" class="agent"/>
+  <text x="607" y="145" class="head">Local Ollama agent review</text>
+  <rect x="605" y="200" width="142" height="94" rx="10" class="box"/>
+  <text x="625" y="231" class="head">Planner</text>
+  <text x="625" y="257" class="body">Proposes methods</text>
+  <rect x="773" y="200" width="142" height="94" rx="10" class="box"/>
+  <text x="791" y="231" class="head">Bio-Refiner</text>
+  <text x="791" y="257" class="body">Reviews pathways</text>
+  <rect x="941" y="200" width="142" height="94" rx="10" class="box"/>
+  <text x="960" y="231" class="head">Challenger</text>
+  <text x="960" y="257" class="body">Checks evidence</text>
+  <rect x="1109" y="200" width="142" height="94" rx="10" class="box"/>
+  <text x="1151" y="231" class="head">Judge</text>
+  <text x="1125" y="257" class="body">Chooses a run</text>
+  <path d="M747 247 H773" class="arrow"/>
+  <path d="M915 247 H941" class="arrow"/>
+  <path d="M1083 247 H1109" class="arrow"/>
+  <text x="609" y="333" class="small">Agents receive summaries and bounded IDs, never the expression matrix.</text>
+
+  <path d="M676 294 V321 H294 V294" class="dash"/>
+  <text x="384" y="318" class="small">Proposed configurations</text>
+  <path d="M543 219 H570 V183 H844 V200" class="dash"/>
+  <text x="616" y="178" class="small">Candidate summaries + selected IDs</text>
+
+  <rect x="274" y="399" width="365" height="48" rx="11" class="bio"/>
+  <text x="294" y="429" class="body">Platform annotation + NCBI / KEGG context</text>
+  <path d="M456 399 V382 H844 V294" class="dash"/>
+  <text x="644" y="382" class="small">Mapped gene/pathway records</text>
+
+  <rect x="890" y="399" width="406" height="48" rx="11" fill="#f5f7fa" stroke="#aab7c5" stroke-width="1.5"/>
+  <text x="910" y="429" class="body">Final output: chosen method, feature IDs, metrics, rationale</text>
+  <path d="M1180 294 V399" class="arrow"/>
+</svg>
