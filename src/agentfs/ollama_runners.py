@@ -25,10 +25,10 @@ _ROLE_SCHEMAS: dict[str, type[BaseModel]] = {
 }
 
 _ROLE_INSTRUCTIONS = {
-    "planner": "Propose a small set of valid feature-selection configurations. Choose only methods in tool_catalog. Keep rationale concise.",
-    "bio_refiner": "Review proposals using only the supplied aggregate metadata and resolved biological context. Preserve valid configs and explain biological relevance without making diagnostic claims.",
-    "challenger": "Critically inspect the proposals for unsupported claims, unavailable tools, and unsuitable feature counts. Request revision only for a concrete issue.",
-    "judge": "Select one defensible proposal. Return a valid config, concise biological_rationale, confidence from 0 to 1, and request revision only for a fixable issue.",
+    "planner": "Propose up to three distinct available selector configurations with k between 5 and 500. Choose only methods listed in tool_catalog. The local selector tools will execute them; do not claim features have been selected yet.",
+    "bio_refiner": "Review the measured candidate feature sets and the supplied resolved probe-to-gene/pathway records. Prefer candidates with real pathway support only when the records show it. List pathway_supported_feature_ids only from supplied resolved contexts that contain pathways. Do not invent biology or gene functions.",
+    "challenger": "Challenge the measured candidate results: inspect nested-CV balanced accuracy and macro-F1, split stability, pairwise correlation, and pathway coverage. Flag weak or unsupported evidence. Request revision only for a concrete concern.",
+    "judge": "Choose only a configuration present in selection_candidates. Prioritize nested-CV balanced accuracy, then macro-F1, stability, and pathway support; use lower redundancy as a tie-breaker. Do not claim diagnosis or accuracy improvement beyond the supplied metrics.",
 }
 
 
@@ -53,8 +53,10 @@ class OllamaStructuredRunner:
             raise OllamaRunnerError(f"Unsupported agent role: {role!r}")
 
         system_prompt = (
-            "You are one role in a research workflow for feature-selection methods on "
-            "microarray data. This workflow is for research, not clinical diagnosis. "
+            "You are one role in a local research workflow for supervised feature "
+            "selection on numeric tabular data. The expression matrix remains in "
+            "local Python selector tools; you receive only selected IDs and summary "
+            "evidence. This workflow is for research, not clinical diagnosis. "
             "Use only the supplied context and available tools. Do not invent pathway "
             "evidence. Return only data matching the required JSON schema. "
             + _ROLE_INSTRUCTIONS[role]
@@ -87,8 +89,11 @@ def check_ollama_model(
     """Return whether the requested model is available in the local Ollama service."""
     selected_model = model or os.environ.get("OLLAMA_MODEL", "llama3.2")
     host = (base_url or os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")).rstrip("/")
-    response = requests.get(f"{host}/api/tags", timeout=timeout)
-    response.raise_for_status()
+    try:
+        response = requests.get(f"{host}/api/tags", timeout=timeout)
+        response.raise_for_status()
+    except requests.RequestException:
+        return False
     return any(
         item.get("name", "").split(":", 1)[0] == selected_model.split(":", 1)[0]
         for item in response.json().get("models", [])

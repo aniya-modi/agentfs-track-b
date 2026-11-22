@@ -12,6 +12,7 @@ from .schemas import (
     JudgeOutput,
     PlannerOutput,
     ProbeGeneContext,
+    SelectionCandidateResult,
 )
 
 
@@ -28,6 +29,7 @@ class AgentState(TypedDict):
     probe_ids: list[str]
     gene_contexts: list[ProbeGeneContext]
     proposed_configs: NotRequired[list[FeatureSelectionConfig]]
+    selection_candidates: NotRequired[list[SelectionCandidateResult]]
     planner_output: NotRequired[PlannerOutput]
     bio_refiner_output: NotRequired[BioRefinerOutput]
     challenger_output: NotRequired[ChallengerOutput]

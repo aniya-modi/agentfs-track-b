@@ -26,10 +26,13 @@ from .schemas import (
     JudgeOutput,
     PlannerOutput,
     ProbeGeneContext,
+    SelectionCandidateResult,
 )
 from .tool_registry import FeatureSelectionToolRegistry
 
 AgentRunner = Callable[[dict[str, Any]], Any]
+SelectionExecutor = Callable[[list[FeatureSelectionConfig]], list[SelectionCandidateResult]]
+ContextResolver = Callable[[list[str]], list[ProbeGeneContext]]
 OutputModel = TypeVar("OutputModel", bound=BaseModel)
 
 
@@ -102,6 +105,15 @@ def _state_context(
         proposal.model_dump(mode="json")
         for proposal in state.get("proposed_configs", [])
     ]
+    candidates = []
+    for candidate in state.get("selection_candidates", [])[:5]:
+        serialized = (
+            candidate.model_dump(mode="json")
+            if isinstance(candidate, SelectionCandidateResult)
+            else SelectionCandidateResult.model_validate(candidate).model_dump(mode="json")
+        )
+        serialized["selected_feature_ids"] = serialized["selected_feature_ids"][:50]
+        candidates.append(serialized)
     return {
         "role": role,
         "dataset_id": state.get("dataset_id", ""),
@@ -110,6 +122,7 @@ def _state_context(
         "probe_id_sample": state.get("probe_ids", [])[:20],
         "gene_contexts": contexts,
         "proposed_configs": proposals,
+        "selection_candidates": candidates,
         "tool_catalog": _tool_catalog(registry),
         "feedback": state.get("feedback", []),
         "retry_count": state.get("revision_count", 0),
@@ -190,7 +203,6 @@ def _default_bio_refiner(
 ) -> BioRefinerOutput:
     planner_output = state.get("planner_output")
     proposals = list(planner_output.proposals) if planner_output else []
-    available = {tool["name"] for tool in _tool_catalog(registry)}
     contexts = [
         context if isinstance(context, ProbeGeneContext) else ProbeGeneContext.model_validate(context)
         for context in state.get("gene_contexts", [])
@@ -201,10 +213,31 @@ def _default_bio_refiner(
     correlation_summary = profile.get("correlation_summary", {}) if isinstance(profile, Mapping) else {}
     mean_correlation = correlation_summary.get("mean_absolute_pairwise_correlation")
 
-    if pathway_contexts and "hypergraph_centrality" in available:
-        proposals.sort(key=lambda proposal: proposal.config.method != "hypergraph_centrality")
-    elif isinstance(mean_correlation, (int, float)) and mean_correlation >= 0.7:
-        proposals.sort(key=lambda proposal: proposal.config.method != "mrmr")
+    candidates = state.get("selection_candidates", [])
+    candidate_by_config = {
+        (candidate.config.method, candidate.config.k): candidate
+        for candidate in candidates
+    }
+
+    def proposal_rank(proposal: AgentProposal) -> tuple[float, float, int, float]:
+        candidate = candidate_by_config.get((proposal.config.method, proposal.config.k))
+        if candidate is None:
+            return (0.0, 0.0, 0, -float(mean_correlation or 0.0))
+        has_pathway_support = int(
+            candidate.pathway_supported_feature_count > 0
+            or (pathway_contexts and proposal.config.method == "hypergraph_centrality")
+        )
+        return (
+            candidate.cv_balanced_accuracy,
+            candidate.selection_stability,
+            has_pathway_support,
+            -float(candidate.mean_pairwise_correlation or 0.0),
+        )
+
+    proposals.sort(
+        key=proposal_rank,
+        reverse=True,
+    )
 
     summary = (
         f"{len(resolved_contexts)} of {len(contexts)} supplied probe contexts resolved; "
@@ -221,7 +254,25 @@ def _default_bio_refiner(
         return _default_bio_refiner(
             {**state, "planner_output": _default_planner(state, registry)}, registry
         )
-    return BioRefinerOutput(proposals=refined[:10], biological_summary=summary)
+    candidate_feature_ids = {
+        feature_id
+        for candidate in candidates
+        for feature_id in candidate.selected_feature_ids
+    }
+    pathway_supported_ids = [
+        context.probe_id
+        for context in resolved_contexts
+        if context.pathways and context.probe_id in candidate_feature_ids
+    ]
+    if not contexts and not candidates:
+        summary += " No selector output or Bio-RAG context was provided."
+    elif candidates and not pathway_contexts:
+        summary += " Candidate feature sets are available, but no pathway evidence resolved."
+    return BioRefinerOutput(
+        proposals=refined[:10],
+        biological_summary=summary,
+        pathway_supported_feature_ids=pathway_supported_ids,
+    )
 
 
 def _default_challenger(
@@ -236,6 +287,18 @@ def _default_challenger(
 
     if not proposals:
         objections.append("No validated selector proposals were supplied.")
+    candidates = state.get("selection_candidates", [])
+    if not candidates:
+        feedback.append("Selector tools did not return measured candidate feature sets.")
+    else:
+        best_balanced = max(item.cv_balanced_accuracy for item in candidates)
+        best_stability = max(item.selection_stability for item in candidates)
+        if best_stability < 0.1:
+            feedback.append("Candidate feature sets show low split-to-split stability.")
+        if best_balanced < 0.5:
+            feedback.append("No candidate exceeded chance-level balanced accuracy in this CV run.")
+        if not any(item.pathway_count for item in candidates):
+            feedback.append("No pathway memberships were available for the candidate sets.")
     for proposal in proposals:
         config = proposal.config
         if config.method not in available:
@@ -284,6 +347,51 @@ def _default_judge(
     profile = state.get("metadata_profile", {})
     summary = profile.get("correlation_summary", {}) if isinstance(profile, Mapping) else {}
     correlation = summary.get("mean_absolute_pairwise_correlation")
+    candidates = state.get("selection_candidates", [])
+    if candidates:
+        candidate = max(
+            candidates,
+            key=lambda item: (
+                item.cv_balanced_accuracy,
+                item.cv_macro_f1,
+                item.selection_stability,
+                item.pathway_supported_feature_count,
+                -(item.mean_pairwise_correlation or 0.0),
+            ),
+        )
+        selected = next(
+            (
+                proposal
+                for proposal in valid
+                if (proposal.config.method, proposal.config.k)
+                == (candidate.config.method, candidate.config.k)
+            ),
+            AgentProposal(config=candidate.config, rationale="Selected from measured CV evidence."),
+        )
+        evidence_note = (
+            f"Measured nested-CV balanced accuracy {candidate.cv_balanced_accuracy:.3f}, "
+            f"macro-F1 {candidate.cv_macro_f1:.3f}, and feature stability "
+            f"{candidate.selection_stability:.3f}."
+        )
+        if candidate.pathway_count:
+            evidence_note += f" The selected set maps to {candidate.pathway_count} pathways."
+        decision = AgentDebateDecision(
+            config=candidate.config,
+            biological_rationale=f"{selected.rationale} {evidence_note}",
+            confidence=min(0.95, max(0.35, candidate.cv_balanced_accuracy)),
+            selected_feature_ids=candidate.selected_feature_ids,
+            cv_accuracy=candidate.cv_accuracy,
+            cv_balanced_accuracy=candidate.cv_balanced_accuracy,
+            cv_macro_f1=candidate.cv_macro_f1,
+            selection_stability=candidate.selection_stability,
+        )
+        challenge = challenger_output or ChallengerOutput()
+        return JudgeOutput(
+            decision=decision,
+            needs_revision=challenge.requires_revision,
+            feedback=challenge.feedback + challenge.objections,
+        )
+
     if has_pathway_evidence and "hypergraph_centrality" in available:
         preference = {"hypergraph_centrality": 0, "mrmr": 1, "lasso": 2}
     elif isinstance(correlation, (int, float)) and correlation >= 0.7:
@@ -361,14 +469,16 @@ def build_agent_graph(
     *,
     runners: AgentRunners | None = None,
     registry: FeatureSelectionToolRegistry | None = None,
+    selection_executor: SelectionExecutor | None = None,
+    context_resolver: ContextResolver | None = None,
 ):
     """Build the Planner → Bio-Refiner → Challenger → Judge LangGraph.
 
-    Custom runners are retried according to ``max_agent_retries`` in the input
-    state. Their outputs are validated with Pydantic V2 before being accepted.
-    Judge revision requests loop back to Planner up to
-    ``max_revision_rounds``; exhaustion invokes a deterministic low-confidence
-    fallback decision.
+    The optional local selection executor receives validated proposals while
+    retaining expression data in its closure. It returns compact CV evidence
+    and selected identifiers for later review. An optional context resolver
+    maps those identifiers to supplied biological records. Neither callback's
+    matrix or labels are added to AgentState or sent to model runners.
     """
     agents = runners or AgentRunners()
     tools = registry or FeatureSelectionToolRegistry()
@@ -385,6 +495,7 @@ def build_agent_graph(
             "probe_ids": validated.probe_ids,
             "gene_contexts": validated.gene_contexts,
             "proposed_configs": validated.proposed_configs,
+            "selection_candidates": [],
             "max_agent_retries": validated.max_agent_retries,
             "max_revision_rounds": validated.max_revision_rounds,
             "agent_attempts": {},
@@ -417,16 +528,175 @@ def build_agent_graph(
         if update.get("retry_node") == "planner":
             return update
         output: PlannerOutput = update["planner_output"]
+        n_features = _feature_count(state)
+        proposals: list[AgentProposal] = []
+        for proposal in output.proposals[:5]:
+            config = proposal.config.model_copy(
+                update={
+                    "k": min(proposal.config.k, n_features)
+                    if n_features is not None
+                    else proposal.config.k,
+                    # The nested-CV evaluator currently scores each selector
+                    # without a separate prefilter; keep final fit consistent.
+                    "two_stage_cascade": False,
+                }
+            )
+            proposals.append(proposal.model_copy(update={"config": config}))
+        normalized = PlannerOutput.model_validate(
+            {**output.model_dump(), "proposals": proposals}
+        )
         return {
             **update,
-            "proposed_configs": [proposal.config for proposal in output.proposals],
+            "planner_output": normalized,
+            "proposed_configs": [proposal.config for proposal in normalized.proposals],
         }
+
+    def selector_tools_node(state: AgentState) -> dict[str, Any]:
+        errors = list(state.get("errors", []))
+        candidates: list[SelectionCandidateResult] = []
+        if selection_executor is None:
+            errors.append(
+                "No local selection executor was configured; this run can recommend "
+                "settings but cannot return selected features."
+            )
+        else:
+            try:
+                candidates = [
+                    item if isinstance(item, SelectionCandidateResult)
+                    else SelectionCandidateResult.model_validate(item)
+                    for item in selection_executor(state.get("proposed_configs", []))
+                ]
+            except Exception as exc:  # noqa: BLE001 - local selector errors are surfaced in state.
+                errors.append(f"Local selector execution failed ({type(exc).__name__}).")
+
+        updates: dict[str, Any] = {
+            "selection_candidates": candidates,
+            "errors": errors,
+        }
+        if context_resolver and candidates:
+            selected_ids = list(
+                dict.fromkeys(
+                    feature_id
+                    for candidate in candidates
+                    for feature_id in candidate.selected_feature_ids
+                )
+            )
+            try:
+                resolved = context_resolver(selected_ids)
+                existing_ids = {
+                    context.probe_id
+                    for context in state.get("gene_contexts", [])
+                    if isinstance(context, ProbeGeneContext)
+                }
+                updates["gene_contexts"] = list(state.get("gene_contexts", [])) + [
+                    context for context in resolved if context.probe_id not in existing_ids
+                ]
+            except Exception as exc:  # noqa: BLE001 - Bio-RAG errors do not discard selector results.
+                updates["errors"] = errors + [
+                    f"Bio-RAG context resolution failed ({type(exc).__name__})."
+                ]
+        return updates
+
+    def bio_refiner_node(state: AgentState) -> dict[str, Any]:
+        update = refiner_node(state)
+        if update.get("retry_node") == "bio_refiner":
+            return update
+        output: BioRefinerOutput = update["bio_refiner_output"]
+        candidates = {
+            feature_id
+            for candidate in state.get("selection_candidates", [])
+            for feature_id in candidate.selected_feature_ids
+        }
+        pathway_backed = {
+            context.probe_id
+            for context in state.get("gene_contexts", [])
+            if isinstance(context, ProbeGeneContext)
+            and context.status == "resolved"
+            and context.pathways
+        }
+        valid_ids = [
+            feature_id
+            for feature_id in output.pathway_supported_feature_ids
+            if feature_id in candidates and feature_id in pathway_backed
+        ]
+        if len(valid_ids) != len(output.pathway_supported_feature_ids):
+            errors = list(update.get("errors", state.get("errors", [])))
+            errors.append("Bio-Refiner feature claims were restricted to resolved pathway records.")
+            update["errors"] = errors
+        update["bio_refiner_output"] = output.model_copy(
+            update={"pathway_supported_feature_ids": valid_ids}
+        )
+        return update
 
     def judge_node(state: AgentState) -> dict[str, Any]:
         update = raw_judge_node(state)
         if update.get("retry_node") == "judge":
             return update
         output: JudgeOutput = update["judge_output"]
+        candidates = state.get("selection_candidates", [])
+        if selection_executor is not None and not candidates:
+            # Do not present a selector recommendation as an executed feature
+            # selection when every local candidate failed.
+            decision = output.decision.model_copy(
+                update={
+                    "biological_rationale": (
+                        "No selector candidate completed, so this run cannot provide "
+                        "an evidence-backed feature set. Review the local selector "
+                        "errors before interpreting the proposed configuration."
+                    ),
+                    "confidence": 0.0,
+                    "selected_feature_ids": [],
+                    "cv_accuracy": None,
+                    "cv_balanced_accuracy": None,
+                    "cv_macro_f1": None,
+                    "selection_stability": None,
+                }
+            )
+            output = output.model_copy(update={"decision": decision, "needs_revision": False})
+            update["judge_output"] = output
+            update["final_decision"] = decision
+            update["fallback_used"] = True
+            update["status"] = "fallback"
+            update["errors"] = list(update.get("errors", state.get("errors", []))) + [
+                "No local feature-selection candidate completed; no selected feature list is available."
+            ]
+            return update
+        if candidates:
+            chosen = next(
+                (
+                    item
+                    for item in candidates
+                    if (item.config.method, item.config.k)
+                    == (output.decision.config.method, output.decision.config.k)
+                ),
+                None,
+            )
+            if chosen is None:
+                output = _default_judge(state, tools)
+                update["fallback_used"] = True
+                update["errors"] = list(update.get("errors", state.get("errors", []))) + [
+                    (
+                        "Judge selected a configuration with no executed feature set; "
+                        "the evidence-based selector choice was used instead."
+                    )
+                ]
+                chosen = next(
+                    item
+                    for item in candidates
+                    if (item.config.method, item.config.k)
+                    == (output.decision.config.method, output.decision.config.k)
+                )
+            decision = output.decision.model_copy(
+                update={
+                    "selected_feature_ids": chosen.selected_feature_ids,
+                    "cv_accuracy": chosen.cv_accuracy,
+                    "cv_balanced_accuracy": chosen.cv_balanced_accuracy,
+                    "cv_macro_f1": chosen.cv_macro_f1,
+                    "selection_stability": chosen.selection_stability,
+                }
+            )
+            output = output.model_copy(update={"decision": decision})
+            update["judge_output"] = output
         if output.needs_revision:
             revision_count = state.get("revision_count", 0) + 1
             return {
@@ -460,6 +730,38 @@ def build_agent_graph(
         return END
 
     def fallback_node(state: AgentState) -> dict[str, Any]:
+        candidates = state.get("selection_candidates", [])
+        if candidates:
+            best = max(
+                candidates,
+                key=lambda item: (
+                    item.cv_balanced_accuracy,
+                    item.cv_macro_f1,
+                    item.selection_stability,
+                    item.pathway_supported_feature_count,
+                    -(item.mean_pairwise_correlation or 0.0),
+                ),
+            )
+            decision = AgentDebateDecision(
+                config=best.config,
+                biological_rationale=(
+                    "Review rounds were exhausted. Selected the best executed candidate "
+                    "by nested-CV balanced accuracy, then macro-F1, stability, and pathway support."
+                ),
+                confidence=0.25,
+                selected_feature_ids=best.selected_feature_ids,
+                cv_accuracy=best.cv_accuracy,
+                cv_balanced_accuracy=best.cv_balanced_accuracy,
+                cv_macro_f1=best.cv_macro_f1,
+                selection_stability=best.selection_stability,
+            )
+            return {
+                "final_decision": decision,
+                "fallback_used": True,
+                "status": "fallback",
+                "feedback": state.get("feedback", [])
+                + ["Judge revision limit reached; best measured selector evidence was used."],
+            }
         proposals: list[AgentProposal] = []
         refined = state.get("bio_refiner_output")
         planned = state.get("planner_output")
@@ -495,16 +797,18 @@ def build_agent_graph(
     graph = StateGraph(AgentState)
     graph.add_node("validate_input", validate_input)
     graph.add_node("planner", planner_node)
-    graph.add_node("bio_refiner", refiner_node)
+    graph.add_node("selector_tools", selector_tools_node)
+    graph.add_node("bio_refiner", bio_refiner_node)
     graph.add_node("challenger", challenger_node)
     graph.add_node("judge", judge_node)
     graph.add_node("fallback", fallback_node)
     graph.add_edge(START, "validate_input")
     graph.add_edge("validate_input", "planner")
     graph.add_conditional_edges(
-        "planner", after_role("planner", "bio_refiner"),
-        {"planner": "planner", "bio_refiner": "bio_refiner"},
+        "planner", after_role("planner", "selector_tools"),
+        {"planner": "planner", "selector_tools": "selector_tools"},
     )
+    graph.add_edge("selector_tools", "bio_refiner")
     graph.add_conditional_edges(
         "bio_refiner", after_role("bio_refiner", "challenger"),
         {"bio_refiner": "bio_refiner", "challenger": "challenger"},

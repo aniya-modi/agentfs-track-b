@@ -24,9 +24,10 @@ brew services start ollama
 ollama pull llama3.2
 ```
 
-The project uses Pydantic v2, Biopython, Requests, pandas, and NumPy. The
-`agents` extra installs LangGraph. The graph has deterministic built-in
-policies and can use four structured-output runners backed by local Ollama.
+The project uses Pydantic v2, Biopython, Requests, pandas, NumPy, SciPy, and
+scikit-learn. The `agents` extra installs LangGraph. The graph uses four
+structured-output runners backed by local Ollama and can execute local feature
+selection tools without sending expression values to the model.
 Keep API credentials in environment variables; never commit tokens or `.env`
 files.
 
@@ -151,21 +152,44 @@ result = graph.invoke({
 print(result["status"], result.get("final_decision"))
 ```
 
-Each callable receives JSON-friendly metadata and returns a mapping or Pydantic
-model matching its role output schema. The provided Ollama runner sends each
-role's Pydantic JSON schema to the local `/api/chat` endpoint and validates the
-response again before the graph accepts it. Its context excludes expression
-values and sample-level labels; aggregate profile metadata may include class
-counts. Run the bounded Golub workflow with:
+The demo workflow assigns concrete work to each stage: Planner proposes
+available selector configurations; local Python tools execute each candidate
+inside nested CV and fit its final exploratory feature list on the full input;
+Bio-Refiner reviews selected IDs against available NCBI/KEGG contexts;
+Challenger reviews measured performance, stability, redundancy, and pathway
+coverage; Judge chooses among executed candidates. Ollama receives only
+aggregate metadata, selected feature IDs, CV summaries, and bounded Bio-RAG
+records. The expression matrix and sample labels remain in local Python.
+
+Run the default Golub demonstration. For live NCBI context, set `NCBI_EMAIL`:
 
 ```bash
+export NCBI_EMAIL="your-email@example.com"
 python examples/run_local_agent_graph.py
 ```
 
-Set `OLLAMA_MODEL` or `OLLAMA_HOST` to override the defaults (`llama3.2` and
-`http://127.0.0.1:11434`). Provider or schema failures trigger bounded retries
-and deterministic fallback behavior. This debate selects a research
-configuration; it does not train a classifier or make a diagnosis.
+The script prints every role's output, the selected feature IDs, and
+cross-validation summaries. It accepts other **labeled numeric tabular CSVs**
+and optional platform-specific annotations:
+
+```bash
+python examples/run_local_agent_graph.py \
+  --dataset path/to/data.csv \
+  --label-column outcome \
+  --annotation path/to/platform_annotation.tsv \
+  --platform GPLxxxx \
+  --probe-column "Probe Set ID" \
+  --gene-symbol-column "Gene Symbol"
+```
+
+If no matching annotation is supplied, the hypergraph and Bio-RAG tools are
+unavailable for that dataset; mRMR and LASSO remain available. This first
+generalized interface supports numeric, labeled tabular inputs, not arbitrary
+medical modalities such as images or clinical text. The short demo CV run is
+for agent review and exploration; because the Judge chooses among candidates
+using those same CV summaries, its winning score is not an unbiased final
+performance estimate. Use a separate outer evaluation before reporting model
+performance. Set `OLLAMA_MODEL` or `OLLAMA_HOST` to override the local defaults.
 
 See [`docs/track_b_month1.md`](docs/track_b_month1.md) for the Month 1 contract
 and completion checklist.

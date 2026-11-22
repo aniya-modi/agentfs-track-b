@@ -38,6 +38,25 @@ class AgentDebateDecision(StrictSchema):
     config: FeatureSelectionConfig
     biological_rationale: str = Field(min_length=1, max_length=4000)
     confidence: float = Field(ge=0.0, le=1.0)
+    selected_feature_ids: list[str] = Field(default_factory=list, max_length=500)
+    cv_accuracy: float | None = Field(default=None, ge=0.0, le=1.0)
+    cv_balanced_accuracy: float | None = Field(default=None, ge=0.0, le=1.0)
+    cv_macro_f1: float | None = Field(default=None, ge=0.0, le=1.0)
+    selection_stability: float | None = Field(default=None, ge=0.0, le=1.0)
+
+
+class SelectionCandidateResult(StrictSchema):
+    """Measured result from running one selector configuration locally."""
+
+    config: FeatureSelectionConfig
+    selected_feature_ids: list[str] = Field(min_length=1, max_length=500)
+    cv_accuracy: float = Field(ge=0.0, le=1.0)
+    cv_balanced_accuracy: float = Field(ge=0.0, le=1.0)
+    cv_macro_f1: float = Field(ge=0.0, le=1.0)
+    selection_stability: float = Field(ge=0.0, le=1.0)
+    pathway_count: StrictInt = Field(default=0, ge=0)
+    pathway_supported_feature_count: StrictInt = Field(default=0, ge=0)
+    mean_pairwise_correlation: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
 class AgentProposal(StrictSchema):
@@ -55,6 +74,7 @@ class PlannerOutput(StrictSchema):
 class BioRefinerOutput(StrictSchema):
     proposals: list[AgentProposal] = Field(min_length=1, max_length=20)
     biological_summary: str = Field(min_length=1, max_length=3000)
+    pathway_supported_feature_ids: list[str] = Field(default_factory=list, max_length=500)
 
 
 class ChallengerOutput(StrictSchema):
