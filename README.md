@@ -34,6 +34,28 @@ The hypergraph selector represents a pathway as a group of connected probe
 features. It can use those groups during selection; it has not been shown to
 improve accuracy over the baseline in every run.
 
+## Interactive demo
+
+The `demo/` page opens with a self-contained animated film: sample markers
+assemble, pathway hyperedges draw around shared probes, a feature shortlist
+moves through the workflow, and four illustrated agents visibly review and
+select the result. Use play, pause, replay, and timeline seeking. The page also
+includes a detailed presenter walkthrough with an interactive GPL80 pathway
+hypergraph, the repository selector formula, a clearly labeled Colab result,
+and clickable descriptions of the four agent roles. The film is explanatory,
+not a recording or live model run; ranking bars are labeled illustrative.
+
+From the repository root, start a local web server:
+
+```bash
+python -m http.server 8000 --bind 127.0.0.1
+```
+
+Then open <http://localhost:8000/demo/>. Use the film controls to play or pause
+the animation, replay it, or seek through its chapters. The detailed walkthrough
+can be navigated with the arrows or keyboard arrow keys. For live agent output,
+run the terminal demo below; the website does not call Ollama or Bio-RAG.
+
 ## Run the demonstration
 
 ### 1. Set up Python
