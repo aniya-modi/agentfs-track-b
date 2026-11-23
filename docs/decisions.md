@@ -423,6 +423,34 @@ coded, evaluated, or shown to improve accuracy.
 Do not describe any item above as an accuracy improvement until repeated
 nested evaluation supports that conclusion.
 
+## Presentation delivery
+
+### Use a visual animation film for the project demonstration
+
+- **Decision:** Lead with a short, locally hosted animated film, then keep the
+  detailed walkthrough available for presenters. The film animates the sample
+  matrix, pathway hyperedges, feature ranking, and a hand-off among four
+  illustrated human-like agents.
+- **Why:** The project should be understood through visible movement and
+  relationships, not a sequence of text-heavy panels. The animated hypergraph
+  shows shared probe membership, while the agent scene makes each role's work
+  and hand-offs visible.
+- **Motion refinement:** Remove looping movement from agent illustrations,
+  arrows, nodes, and pathway outlines after review found them flickery. Keep
+  only one-time scene, data, bar, and shortlist entrances that explain the
+  workflow. Remove presenter names and talk timings from the website.
+- **Evidence shown:** The page uses the verified GPL80/KEGG incidence counts,
+  the selector formula from `HypergraphCentralitySelector`, and the recorded
+  3-repeat × 5-fold Colab result for the class-aware complementary selector.
+  It labels that Colab method separately from the repository's current
+  `hypergraph_centrality` tool.
+- **Scope boundary:** The film is an explanatory animation, not a recording or
+  live execution of feature selection, Ollama, or Bio-RAG. Illustrative rank
+  bars are identified as illustrative. The live agent demo remains
+  `python examples/run_local_agent_graph.py`.
+- **Status:** Implemented in `demo/index.html` with play, pause, replay, and
+  scene seeking; local launch instructions are in `README.md`.
+
 ## Decision log maintenance
 
 When adding a decision, record its date, status (`decided; not implemented`,

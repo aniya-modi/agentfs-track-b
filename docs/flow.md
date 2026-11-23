@@ -350,3 +350,46 @@ matching rerun remain pending; other experiments are still planned:
 | `examples/benchmark_feature_selectors.py` | Repeated nested-CV benchmark for feature selectors |
 | `examples/generate_gene_pathway_report.py` | Exploratory selected-probe and Bio-RAG report |
 | `baseline_benchmark.ipynb` | Repository benchmark notebook; the detailed Colab workflow may be maintained separately |
+
+## Visual film and presentation flow
+
+`demo/index.html` opens with a short animated film. It uses motion to make the
+data and agent hand-offs visible; it does not load expression values or invoke
+the model.
+
+```text
+72 Golub samples + 1,000 processed probe features
+        ↓ animate as sample particles
+GPL80 probe-to-symbol map + KEGG pathway membership
+        ↓ draw multi-probe hyperedges and shared nodes
+Fold-local relevance + pathway-context feature ranking
+        ↓ shortlist cards move to the agent workflow
+Planner proposes → local Python selectors execute
+        ↓ candidate IDs and bounded metrics
+Bio-Refiner checks mapped context → Challenger checks evidence
+        ↓ Judge selects among executed candidates
+Reviewable feature set + rationale + limitations
+```
+
+The animation has seven short chapters: data, hypergraph, feature ranking,
+Planner, local selector, Bio-Refiner/Challenger, and Judge. Custom illustrated
+human-like figures make the four agent roles visible; a moving card represents
+the bounded result hand-off. Play, pause, replay, and timeline seeking are
+available. Agent figures, arrows, pathway edges, and nodes are static; only
+one-time entrances remain for data, bars, and shortlist elements. Presenter
+names and speaking times are omitted from the site. A detailed walkthrough is
+also available for explaining the dataset, selector, experiment, and agents.
+The hypergraph view shows mapped GPL80 probe/gene examples
+that belong to both KEGG MAPK (`hsa04010`) and NF-κB (`hsa04064`) pathways. The
+page reports the current full GPL80 annotation/snapshot totals (7,129 probe
+IDs, 373 pathways, 4,555 probes with membership, 31,513 memberships) separately
+from the processed Golub benchmark (72 samples × 1,000 high-variance probes).
+
+The detail walkthrough reports the Colab complementary selector's mean balanced
+accuracy (0.9589 vs 0.9507) and selected-set correlation (0.3395 vs 0.4701)
+across 3 repeats × 5 outer folds. It explicitly distinguishes those
+experimental figures from the repository's `hypergraph_centrality` method and
+the separate agent-graph run. Film rank bars are illustrative, not recorded
+gene scores; this visual animation is not live model execution. Live agent
+outputs are obtained by running `python examples/run_local_agent_graph.py` in
+the repository environment.
