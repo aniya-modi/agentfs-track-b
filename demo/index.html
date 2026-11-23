@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101421">
+  <title>AgentFS — From Pathways to a Shortlist</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f3f4fa;
+      --muted: #aab1c3;
+      --subtle: #727b91;
+      --night: #101421;
+      --panel: #171d2d;
+      --panel-2: #1d2638;
+      --line: rgba(235, 240, 255, .13);
+      --teal: #65e0d0;
+      --lime: #c2f27d;
+      --violet: #aa9aff;
+      --orange: #ffbe76;
+      --rose: #ff8eaa;
+      --radius: 22px;
+      --shadow: 0 24px 80px rgba(0, 0, 0, .28);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-snap-type: y proximity; }
+    body { margin: 0; background: var(--night); color: var(--ink); }
+    button, a { font: inherit; }
+    button { color: inherit; }
+    a { color: inherit; }
+    .topbar {
+      position: fixed; z-index: 20; inset: 0 0 auto; height: 62px;
+      display: flex; align-items: center; justify-content: space-between; gap: 18px;
+      padding: 0 clamp(18px, 4vw, 64px); background: rgba(16, 20, 33, .88);
+      border-bottom: 1px solid var(--line); backdrop-filter: blur(16px);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; font-size: 13px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    .brand-mark { width: 28px; height: 28px; border: 1px solid rgba(101,224,208,.65); border-radius: 9px; position: relative; transform: rotate(45deg); }
+    .brand-mark::before, .brand-mark::after { content: ""; position: absolute; border: 1px solid var(--lime); border-radius: 50%; inset: 5px -4px; }
+    .brand-mark::after { inset: -4px 5px; border-color: var(--violet); }
+    .top-meta { color: var(--muted); font-size: 12px; letter-spacing: .03em; }
+    .scene-progress { position: fixed; z-index: 19; top: 61px; left: 0; right: 0; height: 3px; display: flex; gap: 2px; }
+    .scene-progress i { flex: 1; background: rgba(255,255,255,.12); transition: background .4s; }
+    .scene-progress i.active { background: var(--teal); box-shadow: 0 0 12px rgba(101,224,208,.6); }
+    main { overflow: hidden; }
+    .scene { min-height: 100vh; scroll-snap-align: start; padding: 110px clamp(22px, 7vw, 112px) 115px; position: relative; display: grid; align-items: center; }
+    .scene::before { content: ""; position: absolute; width: 38vw; aspect-ratio: 1; border-radius: 50%; filter: blur(100px); opacity: .12; pointer-events: none; right: -12vw; top: 8vh; background: var(--teal); }
+    .scene:nth-child(odd)::before { left: -14vw; right: auto; top: 28vh; background: var(--violet); }
+    .scene-inner { width: min(1190px, 100%); margin: auto; position: relative; z-index: 1; }
+    .eyebrow { display: flex; align-items: center; gap: 10px; color: var(--teal); font-size: 11px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+    .eyebrow::before { content: ""; width: 26px; height: 1px; background: currentColor; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { max-width: 850px; margin: 26px 0 20px; font-size: clamp(48px, 8vw, 108px); line-height: .94; letter-spacing: -.065em; font-weight: 690; }
+    h2 { max-width: 760px; margin: 22px 0 16px; font-size: clamp(38px, 5.6vw, 72px); line-height: .99; letter-spacing: -.055em; font-weight: 650; }
+    h3 { margin: 0 0 10px; font-size: 18px; letter-spacing: -.025em; }
+    p { color: var(--muted); font-size: clamp(15px, 1.5vw, 18px); line-height: 1.62; }
+    .lead { max-width: 680px; font-size: clamp(18px, 2vw, 24px); line-height: 1.5; }
+    .accent { color: var(--teal); }
+    .lime { color: var(--lime); }
+    .violet { color: var(--violet); }
+    .rose { color: var(--rose); }
+    .hero { min-height: 100vh; background: radial-gradient(ellipse at 76% 42%, rgba(101,224,208,.14), transparent 34%), radial-gradient(ellipse at 58% 82%, rgba(170,154,255,.12), transparent 38%), var(--night); }
+    .hero h1 span { color: var(--teal); }
+    .hero-byline { display: flex; gap: 10px; flex-wrap: wrap; margin: 30px 0 34px; }
+    .hero-byline span { border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 9px 13px; font-size: 12px; }
+    .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .primary, .secondary, .icon-button { border: 0; cursor: pointer; transition: transform .2s, background .2s, border-color .2s; }
+    .primary { background: var(--teal); color: #0b2020; padding: 14px 20px; border-radius: 13px; font-weight: 800; box-shadow: 0 10px 35px rgba(101,224,208,.2); }
+    .primary:hover, .secondary:hover, .icon-button:hover { transform: translateY(-2px); }
+    .secondary { color: var(--ink); background: rgba(255,255,255,.05); border: 1px solid var(--line); padding: 13px 17px; border-radius: 13px; }
+    .hero-hint { color: var(--subtle); font-size: 12px; margin-left: 4px; }
+    .hero-orbit { position: absolute; right: 5vw; top: 50%; transform: translateY(-50%); width: min(36vw, 460px); aspect-ratio: 1; border-radius: 50%; border: 1px solid rgba(101,224,208,.3); opacity: .9; }
+    .hero-orbit::before, .hero-orbit::after { content: ""; position: absolute; border: 1px solid rgba(170,154,255,.35); border-radius: 50%; inset: 13%; transform: rotate(60deg) scaleX(.62); }
+    .hero-orbit::after { border-color: rgba(194,242,125,.32); transform: rotate(-60deg) scaleX(.62); }
+    .orbit-core { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 74px; aspect-ratio: 1; border-radius: 50%; background: linear-gradient(140deg, var(--teal), var(--violet)); box-shadow: 0 0 70px rgba(101,224,208,.35); }
+    .orbit-dot { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 20px currentColor; }
+    .orbit-dot.one { left: 18%; top: 31%; }.orbit-dot.two { right: 14%; top: 64%; background: var(--rose); }.orbit-dot.three { right: 26%; top: 13%; background: var(--teal); }
+    .hero-foot { position: absolute; bottom: 82px; left: clamp(22px, 7vw, 112px); right: clamp(22px, 7vw, 112px); display: flex; justify-content: space-between; color: var(--subtle); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+    .split { display: grid; grid-template-columns: minmax(0, .88fr) minmax(350px, 1.12fr); align-items: center; gap: clamp(35px, 7vw, 100px); }
+    .split.reverse { grid-template-columns: minmax(350px, 1.12fr) minmax(0, .88fr); }
+    .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 36px; }
+    .stat { border-top: 1px solid var(--line); padding: 18px 12px 8px 0; }
+    .stat strong { display: block; color: var(--ink); font-size: clamp(30px, 4vw, 48px); letter-spacing: -.06em; }
+    .stat small { color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .data-board { min-height: 360px; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(155deg, rgba(29,38,56,.94), rgba(18,24,39,.92)); padding: 24px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+    .board-top { display: flex; align-items: center; justify-content: space-between; color: var(--muted); text-transform: uppercase; font-size: 10px; letter-spacing: .13em; }
+    .sample-grid { display: grid; grid-template-columns: repeat(12,1fr); gap: 6px; margin: 27px 0 18px; }
+      .sample-grid i { aspect-ratio: 1; border-radius: 4px; background: var(--teal); opacity: .85; animation: rise .6s both; }
+    .sample-grid i.aml { background: var(--violet); }
+    @keyframes rise { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); } }
+    .feature-ribbon { display: flex; gap: 5px; height: 37px; align-items: end; margin-top: 25px; }
+    .feature-ribbon i { flex: 1; background: linear-gradient(to top, rgba(101,224,208,.15), var(--teal)); border-radius: 5px 5px 1px 1px; animation: bar-rise .8s both; transform-origin: bottom; }
+    @keyframes bar-rise { from { transform: scaleY(.08); } to { transform: scaleY(1); } }
+    .data-footnote { font-size: 11px; color: var(--subtle); margin: 14px 0 0; }
+    .signal-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin-top: 34px; }
+    .signal { padding: 18px 0; border-top: 1px solid var(--line); }
+    .signal strong { display: block; font-size: 17px; margin-bottom: 5px; }
+    .signal span { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .diagram-wrap { background: radial-gradient(ellipse at 50% 50%, rgba(170,154,255,.12), transparent 64%), rgba(23,29,45,.82); border: 1px solid var(--line); border-radius: 28px; padding: clamp(14px, 2.5vw, 28px); box-shadow: var(--shadow); }
+    .diagram-head { display: flex; justify-content: space-between; align-items: start; gap: 16px; margin: 0 0 12px; }
+    .diagram-head p { font-size: 12px; margin: 5px 0 0; }
+    .diagram-stamp { border: 1px solid rgba(101,224,208,.38); color: var(--teal); padding: 8px 10px; border-radius: 99px; font-size: 10px; white-space: nowrap; }
+    .hypergraph { width: 100%; height: auto; display: block; overflow: visible; }
+    .edge-shape { fill: rgba(101,224,208,.06); stroke: rgba(101,224,208,.75); stroke-width: 2; stroke-dasharray: 6 6; transition: fill .3s, stroke .3s; }
+    .edge-shape.edge-b { fill: rgba(170,154,255,.05); stroke: rgba(170,154,255,.78); }
+    .edge-shape.is-muted { opacity: .13; }
+    .edge-label { fill: var(--teal); font-size: 11px; font-weight: 700; letter-spacing: .05em; }
+    .edge-label.edge-b { fill: var(--violet); }
+    .gene-node circle { fill: #222c40; stroke: #d9e1f1; stroke-width: 1.4; transition: all .25s; }
+    .gene-node text { fill: var(--ink); font-size: 10px; text-anchor: middle; font-weight: 760; }
+    .gene-node .probe { fill: #aab1c3; font-size: 7px; font-weight: 500; }
+    .gene-node.shared circle { stroke: var(--lime); stroke-width: 2.4; filter: drop-shadow(0 0 7px rgba(194,242,125,.75)); }
+    .gene-node.is-muted { opacity: .22; }
+    .edge-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .edge-toggle { cursor: pointer; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 99px; padding: 8px 12px; font-size: 11px; }
+    .edge-toggle[aria-pressed="true"] { color: var(--ink); border-color: var(--teal); background: rgba(101,224,208,.08); }
+    .edge-toggle[data-edge="nfkb"][aria-pressed="true"] { border-color: var(--violet); background: rgba(170,154,255,.08); }
+    .diagram-caption { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 11px; margin: 16px 0 0; }
+    .diagram-caption b { color: var(--lime); }
+    .formula { display: block; background: rgba(7,10,18,.55); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin: 24px 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--teal); font-size: clamp(13px, 1.7vw, 19px); line-height: 1.7; }
+    .operator { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; margin: 30px 0 0; }
+    .operator-step { padding: 16px 14px 0 0; border-top: 1px solid var(--line); position: relative; }
+    .operator-step:not(:last-child)::after { content: "→"; position: absolute; right: 9px; top: 10px; color: var(--subtle); }
+    .operator-step small { color: var(--teal); display: block; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 8px; }
+    .operator-step b { font-size: 14px; }.operator-step p { font-size: 11px; line-height: 1.5; margin: 7px 0 0; }
+    .results-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(260px,.7fr); gap: clamp(30px,6vw,75px); align-items: center; margin-top: 32px; }
+    .chart-card { border: 1px solid var(--line); background: rgba(23,29,45,.8); border-radius: 24px; padding: clamp(20px,3vw,34px); }
+    .chart-title { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; margin-bottom: 25px; }
+    .bars { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(24px,6vw,70px); align-items: end; height: 210px; border-bottom: 1px solid rgba(235,240,255,.26); padding: 0 10% 0; position: relative; }
+    .bars::before, .bars::after { content: ""; position: absolute; left: 0; right: 0; border-top: 1px dashed rgba(235,240,255,.09); }
+    .bars::before { top: 33%; }.bars::after { top: 66%; }
+    .bar-group { display: grid; grid-template-rows: 1fr auto; align-items: end; height: 100%; position: relative; z-index: 1; }
+    .bar { height: var(--height); background: linear-gradient(180deg,var(--teal),rgba(101,224,208,.25)); border: 1px solid rgba(101,224,208,.78); border-bottom: 0; border-radius: 12px 12px 0 0; display: flex; justify-content: center; align-items: start; padding-top: 12px; color: #071917; font-size: 13px; font-weight: 850; box-shadow: 0 0 36px rgba(101,224,208,.1); }
+    .bar.baseline { background: linear-gradient(180deg,rgba(170,154,255,.85),rgba(170,154,255,.2)); border-color: rgba(170,154,255,.75); }
+    .bar-group small { display: block; min-height: 34px; text-align: center; color: var(--muted); font-size: 10px; line-height: 1.35; padding-top: 10px; }
+    .delta { position: absolute; right: 8%; top: 8%; color: var(--lime); font-size: 12px; font-weight: 750; }
+    .metric-pair { display: flex; gap: 22px; margin-top: 20px; }
+    .metric-pair div { flex: 1; border-top: 1px solid var(--line); padding-top: 14px; }
+    .metric-pair strong { display: block; font-size: 23px; letter-spacing: -.04em; }
+    .metric-pair span { color: var(--muted); font-size: 10px; }
+    .result-notes { display: grid; gap: 18px; }
+    .result-note { border-left: 2px solid var(--lime); padding: 2px 0 2px 16px; }
+    .result-note:nth-child(2) { border-color: var(--violet); }
+    .result-note:nth-child(3) { border-color: var(--orange); }
+    .result-note p { font-size: 13px; margin: 0; }
+    .caveat { border: 1px solid rgba(255,190,118,.28); color: #e3c6a5; background: rgba(255,190,118,.06); border-radius: 13px; padding: 12px 14px; font-size: 11px; line-height: 1.5; }
+    .agents-stage { display: grid; grid-template-columns: minmax(0,1fr) minmax(250px,.72fr); gap: clamp(24px,5vw,65px); align-items: center; margin-top: 34px; }
+    .agent-flow { display: grid; gap: 10px; }
+    .agent-row { display: grid; grid-template-columns: 54px 1fr auto; align-items: center; gap: 15px; text-align: left; width: 100%; background: rgba(23,29,45,.72); border: 1px solid var(--line); border-radius: 15px; padding: 13px 16px; cursor: pointer; transition: .25s; }
+    .agent-row:hover, .agent-row.active { transform: translateX(5px); border-color: rgba(101,224,208,.65); background: rgba(29,38,56,.96); }
+    .agent-row.active { box-shadow: 0 0 0 1px rgba(101,224,208,.14), 0 10px 30px rgba(0,0,0,.18); }
+    .agent-num { color: var(--teal); font-family: ui-monospace, monospace; font-size: 12px; }
+    .agent-row:nth-child(3) .agent-num { color: var(--violet); }.agent-row:nth-child(4) .agent-num { color: var(--orange); }.agent-row:nth-child(5) .agent-num { color: var(--lime); }
+    .agent-row b { display: block; font-size: 14px; margin-bottom: 3px; }
+    .agent-row small { color: var(--muted); font-size: 11px; }
+    .agent-row .arrow { color: var(--subtle); }
+    .agent-detail { border: 1px solid var(--line); background: radial-gradient(ellipse at 100% 0%,rgba(101,224,208,.09),transparent 54%),var(--panel); border-radius: 22px; padding: 25px; min-height: 245px; }
+    .agent-detail .role-label { color: var(--teal); font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .agent-detail h3 { font-size: 23px; margin: 12px 0; }
+    .agent-detail p { font-size: 13px; margin-bottom: 20px; }
+    .payload { border-top: 1px solid var(--line); padding-top: 14px; color: var(--subtle); font-size: 10px; line-height: 1.6; }
+    .payload b { color: var(--muted); }
+    .privacy-line { display: flex; gap: 10px; align-items: start; padding: 14px 16px; border: 1px solid rgba(101,224,208,.25); border-radius: 14px; margin-top: 19px; background: rgba(101,224,208,.045); }
+    .privacy-line span { color: var(--teal); font-size: 18px; }
+    .privacy-line p { font-size: 11px; margin: 0; }
+    .closing-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(30px,7vw,90px); align-items: center; margin-top: 28px; }
+    .terminal { background: #0a0d15; border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; }
+    .terminal-bar { display: flex; gap: 6px; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--line); color: var(--subtle); font-size: 10px; }
+    .terminal-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--rose); }.terminal-dot:nth-child(2) { background: var(--orange); }.terminal-dot:nth-child(3) { background: var(--teal); }
+    .terminal-content { padding: 20px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.8; color: var(--muted); }
+    .terminal-content .prompt { color: var(--teal); }.terminal-content .stage { color: var(--violet); }.terminal-content .ready { color: var(--lime); }
+    .terminal-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+    .next-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+    .next-list li { display: flex; gap: 12px; align-items: start; color: var(--muted); font-size: 14px; line-height: 1.55; }
+    .next-list b { color: var(--ink); }
+    .next-list li::before { content: "↗"; color: var(--teal); font-weight: 800; }
+    .closing-note { color: var(--subtle); font-size: 11px; margin-top: 25px; line-height: 1.55; }
+    .sources { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 10px 18px; color: var(--subtle); font-size: 10px; }
+    .sources a { text-decoration-color: rgba(170,154,255,.4); text-underline-offset: 3px; }
+    .controls { position: fixed; z-index: 18; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 7px; padding: 7px; border: 1px solid var(--line); border-radius: 16px; background: rgba(11,15,25,.88); backdrop-filter: blur(16px); box-shadow: var(--shadow); }
+    .icon-button { width: 36px; height: 36px; border-radius: 10px; background: transparent; border: 1px solid transparent; font-size: 15px; }
+    .icon-button:hover { border-color: var(--line); background: rgba(255,255,255,.05); }
+    .control-count { min-width: 54px; text-align: center; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+    .play-button { min-width: 84px; height: 36px; border-radius: 10px; padding: 0 11px; border: 1px solid rgba(101,224,208,.35); color: var(--teal); background: rgba(101,224,208,.08); font-size: 11px; font-weight: 750; cursor: pointer; }
+    .toast { position: fixed; z-index: 30; bottom: 80px; left: 50%; transform: translate(-50%, 10px); opacity: 0; background: var(--ink); color: var(--night); padding: 9px 13px; border-radius: 9px; font-size: 11px; transition: .25s; pointer-events: none; }
+    .toast.show { transform: translate(-50%,0); opacity: 1; }
+    /* Cinematic animated walkthrough */
+    .film-dialog { width: min(1180px, calc(100vw - 28px)); max-width: none; height: min(760px, calc(100dvh - 28px)); max-height: none; padding: 0; overflow: hidden; color: var(--ink); background: #090d17; border: 1px solid rgba(255,255,255,.16); border-radius: 22px; box-shadow: 0 35px 120px #000b; }
+    .film-dialog::backdrop { background: rgba(4,6,12,.88); backdrop-filter: blur(12px); }
+    .film-shell { height:100%; display:grid; grid-template-rows:52px minmax(0,1fr) 96px; background:radial-gradient(ellipse at 50% 42%,rgba(39,61,86,.45),transparent 66%),#090d17; }
+    .film-head { display:flex; align-items:center; gap:14px; padding:0 20px; border-bottom:1px solid var(--line); color:var(--muted); font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
+    .film-head b { color:var(--teal); }.film-head span:nth-child(2) { flex:1; }
+    .film-close { border:1px solid var(--line); background:#ffffff08; color:var(--ink); border-radius:9px; width:32px; height:32px; cursor:pointer; }
+    .film-stage { min-height:0; position:relative; overflow:hidden; display:grid; place-items:center; padding:22px clamp(16px,4vw,54px); }
+    .film-scene { display:none; width:100%; height:100%; align-items:center; justify-items:center; align-content:center; gap:18px; animation:film-enter 1.35s ease-out both; }
+    .film-scene.active { display:grid; }
+    @keyframes film-enter { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+    .film-title { margin:0; text-align:center; font-size:clamp(24px,4vw,48px); letter-spacing:-.05em; line-height:1; }
+    .film-subtitle { text-align:center; margin:0; font-size:clamp(12px,1.4vw,16px); color:var(--muted); }
+    .film-kicker { color:var(--teal); font-size:10px; letter-spacing:.2em; font-weight:800; text-transform:uppercase; }
+    .film-visual { position:relative; width:min(840px,100%); height:clamp(210px,37vh,340px); border:1px solid rgba(235,240,255,.12); border-radius:24px; overflow:hidden; background:radial-gradient(ellipse at 50% 50%,rgba(101,224,208,.08),transparent 65%),linear-gradient(145deg,#111a29,#0d1320); box-shadow:inset 0 0 60px #0005,0 24px 70px #0005; }
+    .film-stats { position:absolute; z-index:2; display:flex; gap:8px; left:18px; top:16px; }
+    .film-stats span,.film-tag { border:1px solid var(--line); border-radius:99px; padding:7px 10px; color:#cad0df; background:#101624dd; font-size:10px; }
+    .film-samples { position:absolute; inset:76px 8% 48px; display:grid; grid-template-columns:repeat(12,1fr); gap:8px; align-content:center; }
+    .film-samples i { display:block; aspect-ratio:1; border-radius:50%; background:var(--teal); box-shadow:0 0 13px #65e0d055; animation:sample-arrive 1.4s ease-out both; }
+    .film-samples i:nth-child(n+48) { background:var(--violet); box-shadow:0 0 13px #aa9aff55; }
+    .film-samples i:nth-child(3n) { animation-delay:.18s; }.film-samples i:nth-child(4n) { animation-delay:.32s; }
+    @keyframes sample-arrive { from{opacity:0} to{opacity:.9} }
+    .film-legend { position:absolute; bottom:14px; left:18px; right:18px; display:flex; justify-content:space-between; color:var(--muted); font-size:10px; }
+    .film-graph { position:absolute; inset:0; width:100%; height:100%; }
+    .film-graph .hull { fill:#65e0d012; stroke:var(--teal); stroke-width:2; stroke-dasharray:8 8; }
+    .film-graph .hull.violet { fill:#aa9aff12; stroke:var(--violet); }
+    .film-graph .link { stroke:#aab1c388; stroke-width:1.2; stroke-dasharray:4 5; }
+    .film-graph .node { fill:#202b40; stroke:var(--lime); stroke-width:2; filter:drop-shadow(0 0 7px #c2f27d88); }
+    .film-graph text { fill:#e9eef9; font-size:12px; font-weight:700; text-anchor:middle; }
+    .film-graph .edge-label { fill:var(--teal); font-size:11px; }.film-graph .edge-label.purple { fill:var(--violet); }
+    .selector-visual { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:clamp(12px,4vw,52px); padding:24px; }
+    .score-bars { height:190px; display:flex; align-items:end; gap:9px; border-bottom:1px solid #fff3; padding:0 10px; }
+    .score-bars i { flex:1; max-width:26px; height:var(--h); background:linear-gradient(#65e0d0,#65e0d033); border-radius:7px 7px 2px 2px; transform-origin:bottom; animation:bar-grow 2s ease-out both; animation-delay:var(--d); }
+    @keyframes bar-grow { from{transform:scaleY(.08);opacity:.35} to{transform:scaleY(1);opacity:1} }
+    .selector-arrow { font-size:32px; color:var(--teal); }
+    .shortlist { display:grid; gap:10px; min-width:170px; }
+    .shortlist b { color:var(--muted); font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
+    .shortlist span { opacity:0; display:flex; gap:10px; align-items:center; border:1px solid #c2f27d55; background:#c2f27d0c; border-radius:10px; padding:9px 11px; font:12px ui-monospace,monospace; animation:chip-in 1.15s ease-out forwards; }
+    .shortlist span:nth-child(2){animation-delay:.8s}.shortlist span:nth-child(3){animation-delay:1.7s}.shortlist span:nth-child(4){animation-delay:2.6s}
+    @keyframes chip-in { from{opacity:0;transform:translateX(-9px)} to{opacity:1;transform:none} }
+    .agent-theatre { display:flex; align-items:end; justify-content:center; gap:clamp(5px,2vw,24px); width:min(900px,100%); height:clamp(215px,38vh,350px); padding:12px 8px 0; }
+    .agent-person { --shirt:var(--teal); --skin:#d9a17d; --hair:#303145; position:relative; width:clamp(82px,12vw,138px); height:90%; display:flex; flex-direction:column; justify-content:end; align-items:center; }
+    .agent-person.active .agent-label b { color:var(--teal); }
+    .agent-person .person-head { position:relative; z-index:2; width:48%; aspect-ratio:.88; border-radius:45% 45% 43% 43%; background:var(--skin); border:2px solid #ffffff55; box-shadow:0 0 24px color-mix(in srgb,var(--shirt) 35%,transparent); }
+    .person-head::before { content:""; position:absolute; width:110%; height:48%; top:-9%; left:-5%; border-radius:60% 60% 20% 20%; background:var(--hair); }
+    .person-head::after { content:"•  •"; position:absolute; left:22%; top:38%; color:#19202b; font-size:12px; letter-spacing:4px; }
+    .agent-person .person-body { width:84%; height:42%; margin-top:-5%; border-radius:42% 42% 9px 9px; background:linear-gradient(120deg,var(--shirt),color-mix(in srgb,var(--shirt) 45%,#152037)); position:relative; }
+    .person-body::after { content:""; position:absolute; width:25%; height:72%; right:-12%; top:10%; border-radius:99px; background:var(--skin); transform:rotate(-22deg); transform-origin:top; }
+    .agent-label { position:absolute; bottom:0; transform:translateY(100%); white-space:nowrap; color:var(--muted); font-size:10px; text-align:center; }
+    .agent-label b { display:block; color:var(--ink); font-size:12px; margin-bottom:3px; }
+    .agent-person.planner {--shirt:#65e0d0;--skin:#c98968;--hair:#1c2935}.agent-person.bio {--shirt:#aa9aff;--skin:#efc19e;--hair:#5d3c34}.agent-person.challenger {--shirt:#ff8eaa;--skin:#9c6349;--hair:#20202a}.agent-person.judge {--shirt:#c2f27d;--skin:#d9a17d;--hair:#392f2b}
+    .speech-card { position:absolute; top:18px; left:50%; transform:translateX(-50%); width:min(320px,75%); text-align:center; border:1px solid #ffffff22; border-radius:13px; background:#111a2aee; box-shadow:0 12px 35px #0005; padding:12px 16px; color:var(--ink); font-size:12px; }
+    .speech-card small { display:block; margin-top:5px; color:var(--teal); font-size:9px; letter-spacing:.1em; text-transform:uppercase; }
+    .film-outcome { display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap; }
+    .outcome-node { width:90px; height:90px; border:1px solid #c2f27d77; border-radius:50%; display:grid; place-items:center; color:var(--lime); font:11px ui-monospace,monospace; background:#c2f27d0b; box-shadow:0 0 34px #c2f27d22; }
+    .outcome-arrow { color:var(--teal); font-size:24px; }
+    .outcome-copy { max-width:240px; color:var(--muted); font-size:12px; line-height:1.6; }
+    .film-foot { display:grid; grid-template-rows:4px 1fr; background:#0d1320; border-top:1px solid var(--line); }
+    .film-track { height:4px; background:#ffffff12; }.film-progress { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--teal),var(--violet),var(--lime)); transition:width .35s linear; }
+    .film-controls { display:flex; align-items:center; gap:10px; padding:12px 18px; }
+    .film-controls button { border:1px solid var(--line); border-radius:9px; background:#ffffff08; color:var(--ink); padding:8px 11px; cursor:pointer; }
+    .film-controls .film-play { border-color:#65e0d077; color:var(--teal); min-width:82px; }
+    .film-time { margin-left:auto; color:var(--muted); font:11px ui-monospace,monospace; }
+    .film-caption { color:var(--muted); font-size:11px; margin-left:5px; }
+    body.film-open { overflow:hidden; }
+    @media(max-width:600px) { .film-dialog{height:calc(100dvh - 12px);width:calc(100vw - 12px);border-radius:16px}.film-shell{grid-template-rows:46px minmax(0,1fr) 88px}.film-stage{padding:13px}.film-visual{height:clamp(200px,34vh,280px)}.agent-theatre{height:230px}.selector-visual{padding:14px}.score-bars{height:135px}.shortlist{min-width:110px}.shortlist span{font-size:9px;padding:8px 6px}.film-caption{display:none} }
+    @media (max-width: 900px) {
+      .hero-orbit { width: 32vw; right: 4vw; opacity: .4; }
+      .split, .split.reverse, .results-layout, .agents-stage, .closing-grid { grid-template-columns: 1fr; }
+      .split { gap: 28px; }.operator { grid-template-columns: repeat(2,1fr); row-gap: 20px; }
+      .scene { min-height: auto; padding-top: 100px; padding-bottom: 105px; }
+      .hero { min-height: 100vh; }
+    }
+    @media (max-width: 570px) {
+      .top-meta { display: none; }.hero-orbit { width: 49vw; top: 33%; right: -5vw; opacity: .35; }
+      .hero h1 { max-width: 620px; }.hero-foot { bottom: 78px; font-size: 9px; }
+      .stats { gap: 7px; }.stat { padding-right: 4px; }.stat strong { font-size: 27px; }.stat small { font-size: 9px; }
+      .operator { grid-template-columns: 1fr 1fr; }.operator-step { padding-right: 8px; }.operator-step:not(:last-child)::after { right: 0; }
+      .bars { height: 170px; padding: 0 2%; gap: 14px; }.bar-group small { font-size: 9px; }
+      .agent-row { grid-template-columns: 32px 1fr auto; padding: 12px; }.agent-row small { font-size: 10px; }
+      .controls { bottom: 10px; gap: 2px; }.icon-button { width: 32px; }.play-button { min-width: 76px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span> AgentFS <span style="color:var(--subtle)">/ Track B</span></div>
+    <div class="top-meta">Interactive research walkthrough</div>
+  </header>
+  <div class="scene-progress" aria-hidden="true"></div>
+
+  <main>
+    <section class="scene hero" aria-labelledby="hero-title">
+      <div class="hero-orbit" aria-hidden="true"><span class="orbit-core"></span><i class="orbit-dot one"></i><i class="orbit-dot two"></i><i class="orbit-dot three"></i></div>
+      <div class="scene-inner">
+        <div class="eyebrow">Microarray feature selection</div>
+        <h1 id="hero-title">From pathways<br>to a <span>shortlist.</span></h1>
+        <p class="lead">A guided look at how AgentFS uses pathway relationships, local feature selection, and four agent roles to build a reviewable gene shortlist.</p>
+        <div class="hero-byline"><span>Golub Hu6800 · ALL vs AML</span><span>Hypergraph + feature selection</span><span>Planner · Bio-Refiner · Challenger · Judge</span></div>
+        <div class="hero-actions">
+          <button class="primary" data-go="1">Start the walkthrough <span aria-hidden="true">→</span></button>
+          <button class="secondary" id="tour-button">▶ Play animated film</button>
+          <span class="hero-hint">A visual journey through the model</span>
+        </div>
+      </div>
+      <div class="hero-foot"><span>Research prototype · Not a diagnostic tool</span><span>Pathway context · Feature selection · Agent review</span></div>
+    </section>
+
+    <section class="scene" aria-labelledby="data-title">
+      <div class="scene-inner split">
+        <div>
+          <div class="eyebrow">01 / The project</div>
+          <h2 id="data-title">A small sample set.<br><span class="accent">Thousands of signals.</span></h2>
+          <p class="lead">The project asks a feature-selection question: can we keep a compact set of informative probes while preserving useful biological context?</p>
+          <div class="stats">
+            <div class="stat"><strong>72</strong><small>Golub samples</small></div>
+            <div class="stat"><strong>1,000</strong><small>high-variance features in the processed benchmark</small></div>
+            <div class="stat"><strong>47 / 25</strong><small>ALL / AML samples</small></div>
+          </div>
+          <p class="data-footnote">The source Hu6800 platform has 7,129 probe IDs. The processed benchmark keeps the top 1,000 high-variance probes, preserving their IDs.</p>
+        </div>
+        <div class="data-board" aria-label="Visual summary of samples and expression features">
+          <div class="board-top"><span>Expression matrix</span><span>72 × 1,000</span></div>
+          <div class="sample-grid" aria-hidden="true"></div>
+          <div class="board-top"><span>Rows · samples</span><span>Columns · probe features</span></div>
+          <div class="feature-ribbon" aria-hidden="true"></div>
+          <div class="signal-grid">
+            <div class="signal"><strong class="rose">ALL</strong><span>47 samples<br>class label</span></div>
+            <div class="signal"><strong class="violet">AML</strong><span>25 samples<br>class label</span></div>
+          </div>
+          <p class="data-footnote">The squares show sample counts; the feature ribbon is a visual index, not individual expression measurements. Matrix and labels stay in local Python.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" aria-labelledby="use-title">
+      <div class="scene-inner split reverse">
+        <div class="diagram-wrap">
+          <div class="diagram-head"><div><h3>One probe, several pathways</h3><p>Real GPL80 probes and KEGG pathway membership from the local snapshot</p></div><span class="diagram-stamp">INTERACTIVE GRAPH</span></div>
+          <svg class="hypergraph" viewBox="0 0 660 360" role="img" aria-labelledby="hg-title hg-desc">
+            <title id="hg-title">Two pathway hyperedges sharing seven mapped probe features</title>
+            <desc id="hg-desc">MAPK signaling and NF-kappa B signaling each include the mapped probe features shown. Highlighting a pathway reveals its member nodes.</desc>
+            <ellipse class="edge-shape" data-edge-shape="mapk" cx="300" cy="180" rx="225" ry="125" transform="rotate(-13 300 180)"></ellipse>
+            <ellipse class="edge-shape edge-b" data-edge-shape="nfkb" cx="365" cy="182" rx="230" ry="132" transform="rotate(14 365 182)"></ellipse>
+            <text class="edge-label" x="90" y="75">MAPK SIGNALING · hsa04010</text>
+            <text class="edge-label edge-b" x="386" y="316">NF-κB SIGNALING · hsa04064</text>
+            <g class="gene-node shared" data-membership="mapk nfkb" transform="translate(135 145)"><circle r="29"></circle><text y="-2">IL1B</text><text class="probe" y="11">X04500_at</text></g>
+            <g class="gene-node shared" data-membership="mapk nfkb" transform="translate(230 105)"><circle r="29"></circle><text y="-2">CD14</text><text class="probe" y="11">X13334_at</text></g>
+            <g class="gene-node shared" data-membership="mapk nfkb" transform="translate(330 126)"><circle r="29"></circle><text y="-2">PRKCB</text><text class="probe" y="11">X07109_at</text></g>
+            <g class="gene-node shared" data-membership="mapk nfkb" transform="translate(435 154)"><circle r="29"></circle><text y="-2">NFKB1</text><text class="probe" y="11">M58603_at</text></g>
+            <g class="gene-node shared" data-membership="mapk nfkb" transform="translate(210 238)"><circle r="29"></circle><text y="-2">IRAK1</text><text class="probe" y="11">L76191_at</text></g>
+            <g class="gene-node shared" data-membership="mapk nfkb" transform="translate(350 246)"><circle r="29"></circle><text y="-2">RELB</text><text class="probe" y="11">M83221_at</text></g>
+            <g class="gene-node shared" data-membership="mapk nfkb" transform="translate(495 230)"><circle r="29"></circle><text y="-2">TNFRSF1A</text><text class="probe" y="11">M58286_s_at</text></g>
+          </svg>
+          <div class="edge-controls" aria-label="Highlight pathway members">
+            <button class="edge-toggle" data-edge="mapk" aria-pressed="false">Highlight MAPK</button>
+            <button class="edge-toggle" data-edge="nfkb" aria-pressed="false">Highlight NF-κB</button>
+            <button class="edge-toggle" data-edge="all" aria-pressed="true">Show both</button>
+          </div>
+          <div class="diagram-caption"><b>↗</b> A hyperedge groups many features together; a probe can participate in multiple pathways.</div>
+        </div>
+        <div>
+          <div class="eyebrow">02 / Why a hypergraph</div>
+          <h2 id="use-title">Pathways connect <span class="violet">groups</span>, not just pairs.</h2>
+          <p class="lead">A conventional graph links two nodes at a time. A hypergraph lets one pathway connect many gene probes in a single relationship.</p>
+          <div class="stats">
+            <div class="stat"><strong>373</strong><small>KEGG human pathways in the snapshot</small></div>
+            <div class="stat"><strong>4,555</strong><small>GPL80 probes with pathway membership</small></div>
+            <div class="stat"><strong>31,513</strong><small>probe-to-pathway memberships</small></div>
+          </div>
+          <p class="data-footnote">The highlighted memberships are from the GPL80 annotation and cached KEGG relations. The diagram shows only a small slice.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" aria-labelledby="method-title">
+      <div class="scene-inner split">
+        <div>
+          <div class="eyebrow">03 / How the selector uses it</div>
+          <h2 id="method-title">Keep class signal.<br><span class="accent">Add pathway context.</span></h2>
+          <p class="lead">The repository’s hypergraph selector combines fold-local ANOVA relevance with a pathway-based spectral centrality score.</p>
+          <code class="formula">combined score = (1 − w) × normalized F-score<br>+ w × normalized pathway centrality</code>
+          <div class="operator">
+            <div class="operator-step"><small>01 / Measure</small><b>Training fold</b><p>Compute F-scores using training samples only.</p></div>
+            <div class="operator-step"><small>02 / Connect</small><b>Incidence H</b><p>Rows are probes; columns are pathways.</p></div>
+            <div class="operator-step"><small>03 / Propagate</small><b>Random walk</b><p>Spread score through shared pathways.</p></div>
+            <div class="operator-step"><small>04 / Rank</small><b>Top k probes</b><p>Return the selected feature IDs.</p></div>
+          </div>
+        </div>
+        <div class="data-board">
+          <div class="board-top"><span>Inside one training fold</span><span>Nothing learned from test fold</span></div>
+          <div style="display:grid;grid-template-columns:1fr 42px 1fr;align-items:center;gap:10px;margin:36px 0 24px">
+            <div style="padding:20px;border:1px solid rgba(101,224,208,.35);border-radius:16px;background:rgba(101,224,208,.06)"><div class="eyebrow">Sample labels</div><p style="font-size:13px;margin:12px 0 0;color:var(--ink)">ALL · AML<br><span style="color:var(--muted)">train rows only</span></p></div>
+            <div style="color:var(--teal);text-align:center;font-size:24px">→</div>
+            <div style="padding:20px;border:1px solid rgba(170,154,255,.35);border-radius:16px;background:rgba(170,154,255,.06)"><div class="eyebrow" style="color:var(--violet)">Feature scores</div><p style="font-size:13px;margin:12px 0 0;color:var(--ink)">statistical signal<br>+ pathway context</p></div>
+          </div>
+          <div class="feature-ribbon" aria-hidden="true" style="height:72px"><i style="height:52%"></i><i style="height:80%"></i><i style="height:39%"></i><i style="height:94%"></i><i style="height:65%"></i><i style="height:32%"></i><i style="height:72%"></i><i style="height:45%"></i><i style="height:88%"></i><i style="height:57%"></i><i style="height:75%"></i><i style="height:36%"></i><i style="height:60%"></i><i style="height:83%"></i><i style="height:49%"></i></div>
+          <p class="data-footnote">Fold-local scoring is part of the selector pipeline. The bar heights above are illustrative; they are not recorded gene scores.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" aria-labelledby="results-title">
+      <div class="scene-inner">
+        <div class="eyebrow">04 / What our experiment found</div>
+        <h2 id="results-title">A small score change.<br><span class="lime">A less repetitive shortlist.</span></h2>
+        <div class="results-layout">
+          <div class="chart-card">
+            <div class="chart-title"><span>Mean balanced accuracy</span><span>3 repeats × 5 outer folds</span></div>
+            <div class="bars" role="img" aria-label="Mean balanced accuracy was 95.89 percent for the complementary pathway selector and 95.07 percent for the matched univariate baseline">
+              <span class="delta">+0.82 percentage points</span>
+              <div class="bar-group"><div class="bar" style="--height:95.89%">95.89%</div><small>Class-aware, complementary<br>gene + pathway selector</small></div>
+              <div class="bar-group"><div class="bar baseline" style="--height:95.07%">95.07%</div><small>Matched univariate<br>baseline</small></div>
+            </div>
+            <div class="metric-pair"><div><strong class="lime">0.3395</strong><span>mean absolute pairwise correlation · pathway selector</span></div><div><strong class="violet">0.4701</strong><span>mean absolute pairwise correlation · baseline</span></div></div>
+          </div>
+          <div class="result-notes">
+            <div class="result-note"><h3>What changed</h3><p>The complementary score penalized candidates that repeated signals already represented in the selected set.</p></div>
+            <div class="result-note"><h3>What it suggests</h3><p>The selected set was less correlated while maintaining similar balanced accuracy on this benchmark.</p></div>
+            <div class="result-note"><h3>What it does not prove</h3><p>This is one small ALL/AML dataset, not evidence of broad generalization or clinical performance.</p></div>
+            <div class="caveat">These numbers come from a separate Colab experiment using a class-aware complementary pathway selector. The current repository agent registry’s <code>hypergraph_centrality</code> selector is a different implementation.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="scene" aria-labelledby="agents-title">
+      <div class="scene-inner">
+        <div class="eyebrow">05 / From shortlist to review</div>
+        <h2 id="agents-title">Four roles.<br><span class="accent">One evidence trail.</span></h2>
+        <p class="lead">The agents do not replace the local selector. They propose, review, challenge, and choose from candidate feature sets that the local tools actually executed.</p>
+        <div class="agents-stage">
+          <div class="agent-flow" role="tablist" aria-label="Select an agent role to inspect">
+            <button class="agent-row active" role="tab" aria-selected="true" data-agent="planner"><span class="agent-num">01</span><span><b>Planner</b><small>Proposes selector configurations</small></span><span class="arrow">→</span></button>
+            <div class="agent-row" aria-hidden="true" style="border-style:dashed;opacity:.78;cursor:default"><span class="agent-num">↳</span><span><b>Local selector tools</b><small>Run mRMR, L1, or hypergraph selection</small></span><span class="arrow">→</span></div>
+            <button class="agent-row" role="tab" aria-selected="false" data-agent="bio"><span class="agent-num">02</span><span><b>Bio-Refiner</b><small>Reviews probe and pathway context</small></span><span class="arrow">→</span></button>
+            <button class="agent-row" role="tab" aria-selected="false" data-agent="challenger"><span class="agent-num">03</span><span><b>Challenger</b><small>Checks evidence and raises concerns</small></span><span class="arrow">→</span></button>
+            <button class="agent-row" role="tab" aria-selected="false" data-agent="judge"><span class="agent-num">04</span><span><b>Judge</b><small>Selects an executed candidate</small></span><span class="arrow">✓</span></button>
+          </div>
+          <div class="agent-detail" aria-live="polite">
+            <div class="role-label" id="agent-kicker">ROLE 01 · PLANNER</div>
+            <h3 id="agent-name">Plan candidate runs</h3>
+            <p id="agent-copy">The Planner reads aggregate dataset metadata and the available tool catalog, then proposes valid selector settings for local execution.</p>
+            <div class="payload"><b>Agent context:</b> dataset shape, class counts, tool catalog, and bounded candidate metadata — never the expression matrix.</div>
+          </div>
+        </div>
+        <div class="privacy-line"><span aria-hidden="true">◎</span><p><b>Data boundary:</b> expression values and sample labels stay in local Python. Ollama receives bounded summaries, selected IDs, CV metrics, and available biological context.</p></div>
+      </div>
+    </section>
+
+    <section class="scene" aria-labelledby="close-title">
+      <div class="scene-inner">
+        <div class="eyebrow">06 / Demo and next steps</div>
+        <h2 id="close-title">Show the work.<br><span class="violet">State the boundary.</span></h2>
+        <div class="closing-grid">
+          <div>
+            <p class="lead">A live demo should make the selection path visible and keep the full terminal transcript as backup.</p>
+            <ol class="next-list">
+              <li><span><b>Run locally:</b> the LangGraph workflow prints each role’s structured output, candidates, selected probe IDs, and CV summaries.</span></li>
+              <li><span><b>Explain the result:</b> show the pathway groups, then trace one mapped probe from selection to Bio-RAG context.</span></li>
+              <li><span><b>Next validation:</b> test additional cohorts, platforms, and feature-selection stability before claiming generalization.</span></li>
+            </ol>
+            <p class="closing-note">This is a research prototype for feature selection and review. It is not a medical diagnostic product. The website is a guided visualization; it does not call the model or claim this animation is a live agent run.</p>
+          </div>
+          <div>
+            <div class="terminal" aria-label="Local demonstration command">
+              <div class="terminal-bar"><i class="terminal-dot"></i><i class="terminal-dot"></i><i class="terminal-dot"></i><span style="margin-left:8px">LOCAL DEMO · TERMINAL</span></div>
+              <div class="terminal-content"><span class="prompt">$</span> python examples/run_local_agent_graph.py<br><span class="stage">Planner → local selectors → Bio-Refiner</span><br><span class="stage">→ Challenger → Judge</span><br><span class="ready">● expression matrix remains local</span><br><span class="ready">● structured outputs shown per role</span></div>
+            </div>
+            <div class="terminal-actions"><button class="primary" id="copy-command">Copy run command</button><button class="secondary" data-go="0">Replay story</button></div>
+            <div class="sources"><a href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GPL80" target="_blank" rel="noreferrer">NCBI GEO · GPL80</a><a href="https://rest.kegg.jp/list/pathway/hsa" target="_blank" rel="noreferrer">KEGG REST · human pathways</a><a href="../docs/hypergraph_accuracy_experiments.md">Experiment notes</a><a href="../docs/flow.md">Project flow</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="film-dialog" id="film-dialog" aria-label="Animated visualization of the AgentFS workflow">
+    <div class="film-shell">
+      <div class="film-head"><b>AGENTFS / VISUAL FILM</b><span id="film-chapter">01 · THE DATA</span><button class="film-close" id="film-close" aria-label="Close film">×</button></div>
+      <div class="film-stage">
+        <section class="film-scene active" data-duration="7500" data-chapter="01 · THE DATA" data-caption="Thousands of measurements begin as a local expression matrix.">
+          <div class="film-kicker">Golub Hu6800 · ALL vs AML</div><h2 class="film-title">A tiny cohort. A sea of measurements.</h2>
+          <div class="film-visual"><div class="film-stats"><span>72 samples</span><span>1,000 processed features</span></div><div class="film-samples" id="film-samples"></div><div class="film-legend"><span>● 47 ALL samples</span><span style="color:var(--violet)">● 25 AML samples</span></div></div>
+          <p class="film-subtitle">The expression matrix stays in local Python throughout selection.</p>
+        </section>
+        <section class="film-scene" data-duration="9000" data-chapter="02 · THE HYPERGRAPH" data-caption="One pathway groups many probes; shared probes connect pathways together.">
+          <div class="film-kicker">Many-to-many biological relationships</div><h2 class="film-title">Pathways become hyperedges.</h2>
+          <div class="film-visual"><svg class="film-graph" viewBox="0 0 820 340" role="img" aria-label="Two overlapping pathway hyperedges connect shared probe nodes">
+            <path class="hull" d="M85,192 C100,76 304,54 427,116 C495,151 464,271 329,290 C202,309 74,271 85,192Z"/><path class="hull violet" d="M341,194 C350,86 559,56 713,122 C781,151 748,267 613,294 C478,321 328,276 341,194Z"/>
+            <text class="edge-label" x="230" y="96">MAPK · hsa04010</text><text class="edge-label purple" x="579" y="96">NF-κB · hsa04064</text>
+            <g class="link"><path d="M165 175L285 150M165 175L354 190M285 150L354 190M354 190L470 150M354 190L570 184M470 150L570 184M570 184L665 214"/></g>
+            <g><circle class="node" cx="165" cy="175" r="7"/><text x="165" y="205">IL1B</text><circle class="node" cx="285" cy="150" r="7"/><text x="285" y="134">CD14</text><circle class="node" cx="354" cy="190" r="8"/><text x="354" y="221">PRKCB</text><circle class="node" cx="470" cy="150" r="8"/><text x="470" y="134">NFKB1</text><circle class="node" cx="570" cy="184" r="8"/><text x="570" y="216">IRAK1</text><circle class="node" cx="665" cy="214" r="7"/><text x="665" y="244">RELB</text></g>
+          </svg></div><p class="film-subtitle">A hyperedge represents one pathway connecting a group of mapped probes.</p>
+        </section>
+        <section class="film-scene" data-duration="8000" data-chapter="03 · FEATURE SELECTION" data-caption="Training-fold statistics and pathway context help rank candidate features.">
+          <div class="film-kicker">Fold-local feature ranking</div><h2 class="film-title">Find signal. Keep useful context.</h2>
+          <div class="film-visual selector-visual"><div><div class="film-tag">Training fold · ranking signal</div><div class="score-bars" id="film-bars"></div></div><div class="selector-arrow">→</div><div class="shortlist"><b>Candidate shortlist</b><span>✦ M25079_s_at</span><span>✦ M26602_at</span><span>✦ HG2887-HT3031_at</span></div></div>
+          <p class="film-subtitle">The bars illustrate ranking flow; they are not recorded gene scores.</p>
+        </section>
+        <section class="film-scene" data-duration="7500" data-chapter="04 · PLANNER" data-caption="The Planner proposes valid candidate selector configurations.">
+          <div class="film-kicker">Agent 1 · Planner</div><h2 class="film-title">First, decide what to try.</h2>
+          <div class="film-visual"><div class="speech-card">“Try a compact, pathway-aware shortlist.”<small>proposed selector settings</small></div><div class="agent-theatre"><div class="agent-person planner active"><div class="person-head"></div><div class="person-body"></div><div class="agent-label"><b>Planner</b>sets a candidate plan</div></div></div></div>
+          <p class="film-subtitle">It sees dataset summaries and the available tools—not the expression matrix.</p>
+        </section>
+        <section class="film-scene" data-duration="7500" data-chapter="05 · LOCAL SELECTOR" data-caption="Local Python tools run the actual feature-selection algorithms.">
+          <div class="film-kicker">Local Python · actual computation</div><h2 class="film-title">The data never leaves the workbench.</h2>
+          <div class="film-visual selector-visual"><div style="text-align:center"><div class="film-tag">Expression matrix · local</div><div class="score-bars" id="film-bars-local"></div></div><div class="selector-arrow">⇢</div><div class="shortlist"><b>Executed candidates</b><span>mRMR shortlist</span><span>L1 shortlist</span><span>Hypergraph shortlist</span></div></div>
+          <p class="film-subtitle">Selectors compute candidates locally; only bounded summaries go to the agents.</p>
+        </section>
+        <section class="film-scene" data-duration="9000" data-chapter="06 · BIO-REFINER + CHALLENGER" data-caption="Biological context is reviewed, then evidence and limitations are challenged.">
+          <div class="film-kicker">Agents 2 + 3 · review and challenge</div><h2 class="film-title">Check the biology. Challenge the evidence.</h2>
+          <div class="film-visual"><div class="speech-card" id="review-card">“I found pathway context for these mapped IDs.”<small>Bio-Refiner · platform-matched annotations</small></div><div class="agent-theatre"><div class="agent-person bio active"><div class="person-head"></div><div class="person-body"></div><div class="agent-label"><b>Bio-Refiner</b>checks mapped pathways</div></div><div class="agent-person challenger"><div class="person-head"></div><div class="person-body"></div><div class="agent-label"><b>Challenger</b>checks support & limits</div></div></div></div>
+          <p class="film-subtitle">Both inspect bounded results and pathway context; neither receives expression values.</p>
+        </section>
+        <section class="film-scene" data-duration="8500" data-chapter="07 · JUDGE + RESULT" data-caption="The Judge selects among executed candidates and records the rationale.">
+          <div class="film-kicker">Agent 4 · Judge</div><h2 class="film-title">A shortlist with an evidence trail.</h2>
+          <div class="film-visual"><div class="speech-card">“Choose the strongest executed candidate—and state why.”<small>Judge · structured decision</small></div><div class="agent-theatre"><div class="agent-person judge active"><div class="person-head"></div><div class="person-body"></div><div class="agent-label"><b>Judge</b>selects and explains</div></div></div></div>
+          <div class="film-outcome"><div class="outcome-node">probe IDs</div><span class="outcome-arrow">→</span><div class="outcome-node">pathway<br>context</div><span class="outcome-arrow">→</span><div class="outcome-copy"><b style="color:var(--lime)">Reviewable feature set</b><br>research prototype · not a diagnostic tool</div></div>
+        </section>
+      </div>
+      <div class="film-foot"><div class="film-track"><span class="film-progress" id="film-progress"></span></div><div class="film-controls"><button class="film-play" id="film-play">Ⅱ Pause</button><button id="film-replay">↺ Replay</button><span class="film-caption" id="film-caption">Thousands of measurements begin as a local expression matrix.</span><span class="film-time" id="film-time">01 / 07</span></div></div>
+    </div>
+  </dialog>
+
+  <nav class="controls" aria-label="Walkthrough controls">
+    <button class="icon-button" id="previous" aria-label="Previous scene" title="Previous (left arrow)">←</button>
+    <span class="control-count" id="scene-count">01 / 06</span>
+    <button class="icon-button" id="next" aria-label="Next scene" title="Next (right arrow)">→</button>
+    <button class="play-button" id="play-toggle" aria-label="Play visual film">▶ Film</button>
+  </nav>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const scenes = [...document.querySelectorAll(".scene")];
+    const progress = document.querySelector(".scene-progress");
+    const count = document.getElementById("scene-count");
+    const playToggle = document.getElementById("play-toggle");
+    const film = document.getElementById("film-dialog");
+    const filmScenes = [...document.querySelectorAll(".film-scene")];
+    const filmProgress = document.getElementById("film-progress");
+    const filmPlay = document.getElementById("film-play");
+    const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let current = 0;
+    let filmIndex = 0;
+    let filmElapsed = 0;
+    let filmStartedAt = 0;
+    let filmTimer = null;
+    let filmPlaying = false;
+
+    document.querySelectorAll(".sample-grid").forEach(grid => {
+      for (let i = 0; i < 72; i++) {
+        const sample = document.createElement("i");
+        sample.className = i < 47 ? "all" : "aml";
+        sample.style.animationDelay = `${(i % 12) * 20}ms`;
+        grid.append(sample);
+      }
+      grid.setAttribute("aria-label", "72 sample markers: 47 ALL and 25 AML; markers show sample counts, not expression values");
+    });
+    document.querySelectorAll(".feature-ribbon").forEach(ribbon => {
+      if (ribbon.children.length > 0) return;
+      for (let i = 0; i < 24; i++) {
+        const bar = document.createElement("i");
+        bar.style.height = `${24 + ((i * 37) % 72)}%`;
+        bar.style.animationDelay = `${i * 18}ms`;
+        ribbon.append(bar);
+      }
+    });
+
+    for (let i = 0; i < 72; i++) document.getElementById("film-samples").append(document.createElement("i"));
+    [42,68,51,89,57,76,36,64,95,48,72,55,82,44,61,91,39,70,53,86,47,65].forEach((height, i) => {
+      const bar = document.createElement("i"); bar.style.setProperty("--h", `${height}%`); bar.style.setProperty("--d", `${i * 35}ms`); document.getElementById("film-bars").append(bar);
+      const barLocal = bar.cloneNode(); barLocal.style.setProperty("--d", `${i * 27}ms`); document.getElementById("film-bars-local").append(barLocal);
+    });
+
+    scenes.forEach((_, i) => {
+      const segment = document.createElement("i");
+      segment.dataset.index = i;
+      progress.append(segment);
+    });
+    const segments = [...progress.children];
+
+    function goTo(index) {
+      current = Math.max(0, Math.min(scenes.length - 1, index));
+      scenes[current].scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+      count.textContent = `${String(current + 1).padStart(2, "0")} / ${String(scenes.length).padStart(2, "0")}`;
+      segments.forEach((el, i) => el.classList.toggle("active", i <= current));
+    }
+    document.querySelectorAll("[data-go]").forEach(button => button.addEventListener("click", () => goTo(Number(button.dataset.go))));
+    document.getElementById("previous").addEventListener("click", () => goTo(current - 1));
+    document.getElementById("next").addEventListener("click", () => goTo(current + 1));
+
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting && entry.intersectionRatio > .5) {
+          current = scenes.indexOf(entry.target);
+          count.textContent = `${String(current + 1).padStart(2, "0")} / ${String(scenes.length).padStart(2, "0")}`;
+          segments.forEach((el, i) => el.classList.toggle("active", i <= current));
+        }
+      }
+    }, { threshold: [.5, .7] });
+    scenes.forEach(scene => observer.observe(scene));
+
+    function updateFilmFrame() {
+      const active = filmScenes[filmIndex];
+      const duration = Number(active.dataset.duration);
+      const pct = Math.min(100, filmElapsed / duration * 100);
+      filmProgress.style.width = `${pct}%`;
+      document.getElementById("film-time").textContent = `${String(filmIndex + 1).padStart(2,"0")} / ${String(filmScenes.length).padStart(2,"0")}`;
+      if (filmIndex === 5 && filmElapsed > 4200) {
+        document.getElementById("review-card").innerHTML = "“The result is less redundant—but does it repeat across splits?”<small>Challenger · metric and stability review</small>";
+        film.querySelector(".agent-person.bio").classList.remove("active");
+        film.querySelector(".agent-person.challenger").classList.add("active");
+      } else if (filmIndex === 5) {
+        document.getElementById("review-card").innerHTML = "“I found pathway context for these mapped IDs.”<small>Bio-Refiner · platform-matched annotations</small>";
+        film.querySelector(".agent-person.bio").classList.add("active");
+        film.querySelector(".agent-person.challenger").classList.remove("active");
+      }
+    }
+    function setFilmFrame(index) {
+      filmIndex = Math.max(0, Math.min(filmScenes.length - 1, index));
+      filmElapsed = 0;
+      filmScenes.forEach((scene, i) => scene.classList.toggle("active", i === filmIndex));
+      document.getElementById("film-chapter").textContent = filmScenes[filmIndex].dataset.chapter;
+      document.getElementById("film-caption").textContent = filmScenes[filmIndex].dataset.caption;
+      filmScenes[filmIndex].getBoundingClientRect();
+      updateFilmFrame();
+    }
+    function pauseFilm() {
+      if (filmTimer) clearInterval(filmTimer);
+      filmTimer = null; filmPlaying = false;
+      filmPlay.textContent = "▶ Play"; filmPlay.setAttribute("aria-label", "Play animation");
+    }
+    function playFilm() {
+      if (filmIndex === filmScenes.length - 1 && filmElapsed >= Number(filmScenes[filmIndex].dataset.duration)) setFilmFrame(0);
+      if (filmPlaying) return;
+      filmPlaying = true; filmStartedAt = Date.now() - filmElapsed;
+      filmPlay.textContent = "Ⅱ Pause"; filmPlay.setAttribute("aria-label", "Pause animation");
+      filmTimer = setInterval(() => {
+        filmElapsed = Date.now() - filmStartedAt;
+        const duration = Number(filmScenes[filmIndex].dataset.duration);
+        if (filmElapsed >= duration) {
+          if (filmIndex >= filmScenes.length - 1) { filmElapsed = duration; updateFilmFrame(); pauseFilm(); return; }
+          setFilmFrame(filmIndex + 1); filmStartedAt = Date.now();
+        }
+        updateFilmFrame();
+      }, 100);
+    }
+    function openFilm() {
+      if (!film.open) film.showModal();
+      setFilmFrame(0); playFilm();
+    }
+    playToggle.addEventListener("click", openFilm);
+    document.getElementById("tour-button").addEventListener("click", openFilm);
+    filmPlay.addEventListener("click", () => filmPlaying ? pauseFilm() : playFilm());
+    document.getElementById("film-replay").addEventListener("click", () => { pauseFilm(); setFilmFrame(0); playFilm(); });
+    document.getElementById("film-close").addEventListener("click", () => film.close());
+    film.addEventListener("click", event => { if (event.target === film) film.close(); });
+    film.addEventListener("close", () => { pauseFilm(); filmProgress.style.width = "0%"; });
+    document.querySelector(".film-track").addEventListener("click", event => {
+      const ratio = (event.clientX - event.currentTarget.getBoundingClientRect().left) / event.currentTarget.clientWidth;
+      pauseFilm(); setFilmFrame(Math.floor(Math.max(0, Math.min(.999, ratio)) * filmScenes.length));
+    });
+    document.addEventListener("keydown", event => {
+      if (film.open) {
+        if (event.key === "ArrowRight") { pauseFilm(); setFilmFrame(filmIndex + 1); }
+        if (event.key === "ArrowLeft") { pauseFilm(); setFilmFrame(filmIndex - 1); }
+        if (event.code === "Space" && event.target.tagName !== "BUTTON") { event.preventDefault(); filmPlaying ? pauseFilm() : playFilm(); }
+      } else {
+        if (event.key === "ArrowRight") goTo(current + 1);
+        if (event.key === "ArrowLeft") goTo(current - 1);
+        if (event.code === "Space" && !["INPUT", "TEXTAREA", "BUTTON"].includes(document.activeElement.tagName)) { event.preventDefault(); openFilm(); }
+      }
+    });
+
+    const toggles = [...document.querySelectorAll(".edge-toggle")];
+    const nodes = [...document.querySelectorAll(".gene-node")];
+    const edges = [...document.querySelectorAll(".edge-shape")];
+    function highlightEdge(edge) {
+      toggles.forEach(button => button.setAttribute("aria-pressed", String(button.dataset.edge === edge)));
+      const showAll = edge === "all";
+      edges.forEach(shape => shape.classList.toggle("is-muted", !showAll && shape.dataset.edgeShape !== edge));
+      nodes.forEach(node => node.classList.toggle("is-muted", !showAll && !node.dataset.membership.split(" ").includes(edge)));
+    }
+    toggles.forEach(button => button.addEventListener("click", () => highlightEdge(button.dataset.edge)));
+
+    const agentDetails = {
+      planner: { kicker: "ROLE 01 · PLANNER", title: "Plan candidate runs", copy: "The Planner reads aggregate dataset metadata and the available tool catalog, then proposes valid selector settings for local execution.", payload: "dataset shape · class counts · available tool catalog · proposed settings" },
+      bio: { kicker: "ROLE 02 · BIO-REFINER", title: "Review biological context", copy: "The Bio-Refiner examines mapped probe IDs and available gene/pathway records. Platform-matched GPL80 annotation prevents opaque probe IDs from being treated as symbols.", payload: "selected feature IDs · mapped symbols · bounded NCBI/KEGG context · candidate summaries" },
+      challenger: { kicker: "ROLE 03 · CHALLENGER", title: "Challenge weak evidence", copy: "The Challenger checks whether the candidate is supported by the measured metrics and raises concerns about stability, redundancy, or missing pathway evidence.", payload: "CV summaries · selected IDs · pathway coverage · bounded biological context" },
+      judge: { kicker: "ROLE 04 · JUDGE", title: "Choose an executed candidate", copy: "The Judge compares only candidates that the local selector actually ran, then returns the selected configuration, feature IDs, confidence, and rationale.", payload: "executed candidate results · validation status · critique · bounded agent feedback" }
+    };
+    document.querySelectorAll("[data-agent]").forEach(button => button.addEventListener("click", () => {
+      document.querySelectorAll("[data-agent]").forEach(item => { item.classList.toggle("active", item === button); item.setAttribute("aria-selected", String(item === button)); });
+      const detail = agentDetails[button.dataset.agent];
+      document.getElementById("agent-kicker").textContent = detail.kicker;
+      document.getElementById("agent-name").textContent = detail.title;
+      document.getElementById("agent-copy").textContent = detail.copy;
+      document.querySelector(".payload").innerHTML = `<b>Agent context:</b> ${detail.payload}`;
+    }));
+
+    const toast = document.getElementById("toast");
+    document.getElementById("copy-command").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText("python examples/run_local_agent_graph.py");
+        toast.textContent = "Run command copied";
+      } catch {
+        toast.textContent = "Command: python examples/run_local_agent_graph.py";
+      }
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 1800);
+    });
+    goTo(0);
+  </script>
+</body>
+</html>
