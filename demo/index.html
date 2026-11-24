@@ -98,6 +98,23 @@
     .signal { padding: 18px 0; border-top: 1px solid var(--line); }
     .signal strong { display: block; font-size: 17px; margin-bottom: 5px; }
     .signal span { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .opening-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 28px; margin-top: 34px; }
+    .opening-item { padding: 20px 0 18px; border-top: 1px solid var(--line); }
+    .opening-item small { display: block; color: var(--teal); font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 9px; }
+    .opening-item h3 { font-size: 17px; margin-bottom: 7px; }
+    .opening-item p { font-size: 13px; line-height: 1.55; margin: 0; }
+    .opening-foot { margin-top: 26px; padding: 16px 18px; border-left: 2px solid var(--lime); background: rgba(194,242,125,.045); color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .opening-foot b { color: var(--ink); }
+    .scope-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 28px; }
+    .scope-column { border-top: 1px solid var(--line); padding-top: 16px; }
+    .scope-column h3 { color: var(--teal); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
+    .scope-column.out h3 { color: var(--orange); }
+    .scope-column ul { list-style: none; display: grid; gap: 11px; margin: 0; padding: 0; }
+    .scope-column li { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .scope-column li::before { content: "•"; color: var(--teal); margin-right: 9px; }
+    .scope-column.out li::before { color: var(--orange); }
+    .data-boundary { margin-top: 22px; padding: 16px 18px; border: 1px solid rgba(101,224,208,.25); border-radius: 14px; background: rgba(101,224,208,.045); color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .data-boundary b { color: var(--ink); }
     .diagram-wrap { background: radial-gradient(ellipse at 50% 50%, rgba(170,154,255,.12), transparent 64%), rgba(23,29,45,.82); border: 1px solid var(--line); border-radius: 28px; padding: clamp(14px, 2.5vw, 28px); box-shadow: var(--shadow); }
     .diagram-head { display: flex; justify-content: space-between; align-items: start; gap: 16px; margin: 0 0 12px; }
     .diagram-head p { font-size: 12px; margin: 5px 0 0; }
@@ -233,7 +250,11 @@
     .person-head::before { content:""; position:absolute; width:110%; height:48%; top:-9%; left:-5%; border-radius:60% 60% 20% 20%; background:var(--hair); }
     .person-head::after { content:"•  •"; position:absolute; left:22%; top:38%; color:#19202b; font-size:12px; letter-spacing:4px; }
     .agent-person .person-body { width:84%; height:42%; margin-top:-5%; border-radius:42% 42% 9px 9px; background:linear-gradient(120deg,var(--shirt),color-mix(in srgb,var(--shirt) 45%,#152037)); position:relative; }
-    .person-body::after { content:""; position:absolute; width:25%; height:72%; right:-12%; top:10%; border-radius:99px; background:var(--skin); transform:rotate(-22deg); transform-origin:top; }
+    .person-body::before, .person-body::after { content:""; position:absolute; z-index:1; width:25%; height:86%; top:10%; border-radius:99px; background:var(--skin); transform-origin:top center; }
+    .person-body::before { left:-12%; transform:rotate(22deg); animation:raise-left-hand 6s ease-in-out infinite; }
+    .person-body::after { right:-12%; transform:rotate(-22deg); animation:raise-right-hand 6s ease-in-out infinite; animation-delay:-3s; }
+    @keyframes raise-left-hand { 0%,100% { transform:rotate(22deg); } 50% { transform:rotate(62deg); } }
+    @keyframes raise-right-hand { 0%,100% { transform:rotate(-22deg); } 50% { transform:rotate(-62deg); } }
     .agent-label { position:absolute; bottom:0; transform:translateY(100%); white-space:nowrap; color:var(--muted); font-size:10px; text-align:center; }
     .agent-label b { display:block; color:var(--ink); font-size:12px; margin-bottom:3px; }
     .agent-person.planner {--shirt:#65e0d0;--skin:#c98968;--hair:#1c2935}.agent-person.bio {--shirt:#aa9aff;--skin:#efc19e;--hair:#5d3c34}.agent-person.challenger {--shirt:#ff8eaa;--skin:#9c6349;--hair:#20202a}.agent-person.judge {--shirt:#c2f27d;--skin:#d9a17d;--hair:#392f2b}
@@ -255,6 +276,7 @@
     @media (max-width: 900px) {
       .hero-orbit { width: 32vw; right: 4vw; opacity: .4; }
       .split, .split.reverse, .results-layout, .agents-stage, .closing-grid { grid-template-columns: 1fr; }
+      .opening-grid, .scope-columns { grid-template-columns: 1fr; }
       .split { gap: 28px; }.operator { grid-template-columns: repeat(2,1fr); row-gap: 20px; }
       .scene { min-height: auto; padding-top: 100px; padding-bottom: 105px; }
       .hero { min-height: 100vh; }
@@ -268,7 +290,7 @@
       .agent-row { grid-template-columns: 32px 1fr auto; padding: 12px; }.agent-row small { font-size: 10px; }
       .controls { bottom: 10px; gap: 2px; }.icon-button { width: 32px; }.play-button { min-width: 76px; }
     }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } .person-body::before, .person-body::after { animation: none !important; } }
   </style>
 </head>
 <body>
@@ -322,6 +344,64 @@
       </div>
     </section>
 
+    <section class="scene" aria-labelledby="problem-title">
+      <div class="scene-inner">
+        <div class="eyebrow">01 / The problem</div>
+        <h2 id="problem-title">A shortlist can score well<br>and still be <span class="rose">hard to trust.</span></h2>
+        <p class="lead">With thousands of probes and only 72 samples, feature rankings can shift, repeat the same signal, or lose the biological relationships behind the measurements.</p>
+        <div class="opening-grid">
+          <div class="opening-item"><small>01 · Stability</small><h3>Rankings can change across splits</h3><p>A different training subset may return a different shortlist, making it difficult to know which features are dependable.</p></div>
+          <div class="opening-item"><small>02 · Redundancy</small><h3>Many probes can repeat one signal</h3><p>Highly correlated features may crowd the selected set without adding much new information.</p></div>
+          <div class="opening-item"><small>03 · Biological context</small><h3>Independent scores miss pathway groups</h3><p>Scoring each probe alone does not represent how several genes participate in the same pathway.</p></div>
+          <div class="opening-item"><small>04 · Leakage</small><h3>Test data must not guide selection</h3><p>If feature rankings use held-out samples, reported evaluation can look better than a valid unseen-data estimate.</p></div>
+        </div>
+        <div class="opening-foot"><b>Design target:</b> a compact, interpretable shortlist evaluated with training-fold-only feature selection. These are the problems the pipeline is designed to address; the current demo does not claim they are all solved.</div>
+      </div>
+    </section>
+
+    <section class="scene" aria-labelledby="goal-title">
+      <div class="scene-inner">
+        <div class="eyebrow">02 / Goal</div>
+        <h2 id="goal-title">Build a shortlist<br>that <span class="accent">survives scrutiny.</span></h2>
+        <p class="lead">Turn a high-dimensional expression matrix into a smaller set of informative probe features, while retaining pathway structure and an auditable selection process.</p>
+        <div class="opening-grid">
+          <div class="opening-item"><small>Structure</small><h3>Use pathway relationships</h3><p>Represent a pathway as one connection across its member probes, then combine that structure with class relevance.</p></div>
+          <div class="opening-item"><small>Orchestration</small><h3>Make each agent role concrete</h3><p>Let agents plan and review candidate selections using structured outputs, while Python tools perform the actual matrix-based computation.</p></div>
+          <div class="opening-item"><small>Explanation</small><h3>Keep the evidence traceable</h3><p>Carry selected probe IDs into pathway annotations and report evaluation metrics with the selection method.</p></div>
+          <div class="opening-item"><small>Evaluation</small><h3>Compare under the same protocol</h3><p>Use the same data splits and metrics to examine balanced accuracy, redundancy, selection stability, and runtime.</p></div>
+        </div>
+        <div class="opening-foot"><b>Project question:</b> can pathway context and structured review produce a more useful, explainable feature shortlist than selecting probes by individual scores alone?</div>
+      </div>
+    </section>
+
+    <section class="scene" aria-labelledby="scope-title">
+      <div class="scene-inner">
+        <div class="eyebrow">03 / Novelty and intended use</div>
+        <h2 id="scope-title">The contribution is the <span class="violet">connected workflow.</span></h2>
+        <p class="lead">The project brings pathway-informed ranking, local selector tools, platform-aware biological context, and a four-role review graph into one inspectable research pipeline.</p>
+        <div class="scope-columns">
+          <div class="scope-column"><h3>In scope</h3><ul><li>Compare selectors on shared folds, metrics, and evaluation budgets.</li><li>Fit preprocessing and feature ranking inside training folds.</li><li>Generate candidate shortlists locally, then review bounded evidence.</li><li>Use pathway and literature context with traceable identifiers.</li></ul></div>
+          <div class="scope-column out"><h3>Outside this prototype</h3><ul><li>Patient-level diagnosis, prognosis, or treatment selection.</li><li>Clinical deployment or claims of clinical validation.</li><li>Causal claims about gene mechanisms.</li><li>Evidence that one dataset proves generalization to every platform.</li></ul></div>
+        </div>
+        <div class="data-boundary"><b>Data boundary:</b> expression values and sample labels stay in local Python. Agents receive bounded summaries and selected IDs; NCBI/KEGG lookups use mapped identifiers for biological context.</div>
+      </div>
+    </section>
+
+    <section class="scene" aria-labelledby="architecture-title">
+      <div class="scene-inner">
+        <div class="eyebrow">System architecture · workflow</div>
+        <h2 id="architecture-title">Local selection.<br><span class="accent">Bounded agent review.</span></h2>
+        <p class="lead">The workflow separates matrix computation from agent reasoning and external biological lookups.</p>
+        <div class="opening-grid">
+          <div class="opening-item"><small>01 · Local data plane</small><h3>Prepare the expression matrix</h3><p>Load mapped probe IDs and labels; split samples for evaluation; fit preprocessing and selectors using training folds only.</p></div>
+          <div class="opening-item"><small>02 · Candidate generation</small><h3>Run selector tools in Python</h3><p>Compute candidate feature sets with the configured selector families. Expression values and labels remain local.</p></div>
+          <div class="opening-item"><small>03 · Agent review</small><h3>Planner → Bio-Refiner → Challenger</h3><p>Plan valid runs, inspect mapped biological context, and question weak evidence or limitations through Pydantic-validated state.</p></div>
+          <div class="opening-item"><small>04 · Decision and record</small><h3>Judge → selected candidate</h3><p>Choose among executed candidates; if review reaches its revision limit, apply the documented fallback and record why.</p></div>
+        </div>
+        <div class="data-boundary"><b>Information boundary:</b> agents receive bounded metadata, candidate IDs, and evaluation summaries. NCBI/KEGG lookups use mapped identifiers; no expression matrix is sent to the LLM.</div>
+      </div>
+    </section>
+
     <section class="scene" aria-labelledby="use-title">
       <div class="scene-inner split reverse">
         <div class="diagram-wrap">
@@ -362,6 +442,21 @@
       </div>
     </section>
 
+    <section class="scene" aria-labelledby="families-title">
+      <div class="scene-inner">
+        <div class="eyebrow">Selector families · comparison</div>
+        <h2 id="families-title">Three selector families.<br><span class="violet">One shared comparison.</span></h2>
+        <p class="lead">Each family prioritizes features differently. Comparing them under the same evaluation setup helps show what pathway structure contributes.</p>
+        <div class="opening-grid">
+          <div class="opening-item"><small>Univariate · F-score</small><h3>Rank by class separation</h3><p>Score each probe independently by comparing between-class and within-class variation. It is a simple, fast reference point.</p></div>
+          <div class="opening-item"><small>Redundancy-aware · mRMR</small><h3>Balance relevance and repetition</h3><p>Prefer probes that distinguish classes while avoiding candidates that strongly correlate with already selected probes.</p></div>
+          <div class="opening-item"><small>Sparse model · L1 logistic</small><h3>Use sparse model coefficients</h3><p>L1 regularization can shrink some coefficients to zero; the remaining non-zero weights inform a compact feature set.</p></div>
+          <div class="opening-item"><small>Pathway-aware · hypergraph</small><h3>Include group structure</h3><p>Combine class-relevance scores with centrality propagated through multi-gene pathway memberships.</p></div>
+        </div>
+        <div class="opening-foot"><b>Fair comparison:</b> use the same folds, metrics, and feature budget for each selector. Their selection rules differ; evaluation conditions should not.</div>
+      </div>
+    </section>
+
     <section class="scene" aria-labelledby="method-title">
       <div class="scene-inner split">
         <div>
@@ -386,6 +481,22 @@
           <div class="feature-ribbon" aria-hidden="true" style="height:72px"><i style="height:52%"></i><i style="height:80%"></i><i style="height:39%"></i><i style="height:94%"></i><i style="height:65%"></i><i style="height:32%"></i><i style="height:72%"></i><i style="height:45%"></i><i style="height:88%"></i><i style="height:57%"></i><i style="height:75%"></i><i style="height:36%"></i><i style="height:60%"></i><i style="height:83%"></i><i style="height:49%"></i></div>
           <p class="data-footnote">Fold-local scoring is part of the selector pipeline. The bar heights above are illustrative; they are not recorded gene scores.</p>
         </div>
+      </div>
+    </section>
+
+    <section class="scene" aria-labelledby="ranking-title">
+      <div class="scene-inner">
+        <div class="eyebrow">Pathway-aware feature ranking</div>
+        <h2 id="ranking-title">Measure relevance.<br><span class="accent">Propagate through pathways.</span></h2>
+        <p class="lead">Within each training fold, the selector combines a probe’s class-separation signal with its structural position in the pathway hypergraph.</p>
+        <div class="opening-grid">
+          <div class="opening-item"><small>1 · Measure class relevance</small><h3>Training-fold ANOVA F-score</h3><p>Calculate probe scores from training samples only, then normalize the scores to [0, 1].</p></div>
+          <div class="opening-item"><small>2 · Propagate through memberships</small><h3>Build and use incidence matrix H</h3><p>Rows represent probes and columns represent pathways. Node and pathway degrees normalize how relevance moves across shared memberships.</p></div>
+          <div class="opening-item"><small>3 · Blend and select</small><h3>Combine signal with centrality</h3><p>Normalize both components and rank probes by the weighted combined score, then keep the top k features.</p></div>
+          <div class="opening-item"><small>Fold safety</small><h3>Do not rank with held-out samples</h3><p>Fit the relevance scores and selected feature list independently inside each training fold.</p></div>
+        </div>
+        <code class="formula">S = Dv<sup>−1/2</sup> H De<sup>−1</sup> Hᵀ Dv<sup>−1/2</sup><br>r(t+1) = α S r(t) + (1 − α) f<br>score = (1 − w) f<sub>norm</sub> + w c<sub>norm</sub></code>
+        <div class="opening-foot"><b>Configured example:</b> α = 0.85 · w = 0.40 · 30 propagation iterations · k = 50. These settings describe this implementation; they are not universal defaults for every dataset.</div>
       </div>
     </section>
 
